@@ -15,6 +15,7 @@ import { UIManager } from './managers/uiManager.js';
 import { FileIOManager } from './managers/fileIOManager.js';
 import { RenderManager } from './managers/renderManager.js';
 import { GeometryController } from './managers/geometryController.js';
+import { CrystalRenderManager } from './managers/crystalRenderManager.js';
 
 export class Editor {
     constructor() {
@@ -36,6 +37,7 @@ export class Editor {
         this.fileIOManager = new FileIOManager(this);
         this.renderManager = new RenderManager(this);
         this.geometryController = new GeometryController(this);
+        this.crystalRenderManager = new CrystalRenderManager(this);
 
         // Now safe to initialize MoleculeManager (will call updateAllLabels)
         this.moleculeManager = new MoleculeManager(this);

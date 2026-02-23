@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { ELEMENTS } from './constants.js';
 import { GeometryEngine } from './geometryEngine.js';
 import { rdkitManager } from './managers/rdkitManager.js';
+import { LatticeParams } from './crystal.js';
 
 export class CommandRegistry {
     constructor(editor) {
@@ -947,7 +948,7 @@ export class CommandRegistry {
 
 
         // Export Command
-        this.register('export', ['exp'], 'export <format> [-s] - Export molecule', (args) => {
+        this.register('export', ['exp'], 'export <format> [-s] - Export molecule (formats: xyz, smi, sdf, cif, poscar)', async (args) => {
             if (args.length === 0) return { error: 'Usage: export <format> [-s|--split]' };
 
             const format = args[0].toLowerCase();
@@ -959,18 +960,166 @@ export class CommandRegistry {
                     if (!data) return { warning: 'No atoms to export' };
                     return { info: data };
                 } else if (format === 'smi' || format === 'smiles') {
-                    return this.editor.fileIOManager.exportSMILES({ splitFragments }).then(data => {
-                        return { info: data };
-                    });
+                    const data = await this.editor.fileIOManager.exportSMILES({ splitFragments });
+                    return { info: data };
                 } else if (format === 'sdf' || format === 'mol') {
                     const data = this.editor.fileIOManager.exportSDF({ splitFragments });
                     return { info: data };
+                } else if (format === 'cif') {
+                    const data = this.editor.fileIOManager.exportCIF();
+                    if (!data) return { error: 'Active structure is not a crystal. Load a CIF or POSCAR first.' };
+                    return { info: data };
+                } else if (format === 'poscar' || format === 'vasp') {
+                    const data = this.editor.fileIOManager.exportPOSCAR();
+                    if (!data) return { error: 'Active structure is not a crystal. Load a CIF or POSCAR first.' };
+                    return { info: data };
                 } else {
-                    return { error: `Unknown format: ${format}. Supported: xyz, smi, sdf` };
+                    return { error: `Unknown format: ${format}. Supported: xyz, smi, sdf, cif, poscar` };
                 }
             } catch (e) {
                 return { error: e.message };
             }
+        });
+
+        // ─── Crystal-specific commands ────────────────────────────────────────
+
+        // cell: show or set lattice parameters
+        this.register('cell', [], 'cell [a b c alpha beta gamma] - Show or set unit cell parameters', (args) => {
+            const mol = this.editor.molecule;
+            if (args.length === 0) {
+                // Show current cell parameters
+                if (!mol || !mol.isCrystal || !mol.lattice) {
+                    return { info: 'No crystal loaded. Use: cell <a> <b> <c> <alpha> <beta> <gamma>' };
+                }
+                const l = mol.lattice;
+                const { a: va, b: vb, c: vc } = l.toLatticeVectors();
+                return {
+                    info: [
+                        `Cell parameters:  ${l.toString()}`,
+                        `Volume: ${l.volume().toFixed(3)} Å³`,
+                        `Atoms: ${mol.atoms.length}`,
+                        mol.spaceGroup ? `Space group: ${mol.spaceGroup}` : null,
+                        mol.spaceGroupNumber ? `IT number: ${mol.spaceGroupNumber}` : null,
+                        ``,
+                        `Lattice vectors (Å):`,
+                        `  a: (${va.x.toFixed(4)}, ${va.y.toFixed(4)}, ${va.z.toFixed(4)})`,
+                        `  b: (${vb.x.toFixed(4)}, ${vb.y.toFixed(4)}, ${vb.z.toFixed(4)})`,
+                        `  c: (${vc.x.toFixed(4)}, ${vc.y.toFixed(4)}, ${vc.z.toFixed(4)})`,
+                    ].filter(l => l !== null).join('\n')
+                };
+            }
+
+            if (args.length !== 6) return { error: 'Usage: cell <a> <b> <c> <alpha> <beta> <gamma>' };
+            const [a, b, c, alpha, beta, gamma] = args.map(parseFloat);
+            if ([a, b, c, alpha, beta, gamma].some(isNaN)) return { error: 'All values must be numbers' };
+
+            if (!mol || !mol.isCrystal) {
+                return { error: 'No crystal structure loaded. Import a CIF or POSCAR file first.' };
+            }
+
+            mol.setLattice(new LatticeParams(a, b, c, alpha, beta, gamma));
+            // Recompute Cartesian positions from stored fractional coords
+            mol.atoms.forEach(atom => {
+                const frac = mol.getFrac(atom);
+                if (frac) {
+                    const cart = mol.lattice.fracToCart(frac.x, frac.y, frac.z);
+                    atom.position.copy(cart);
+                }
+            });
+            this.editor.rebuildScene();
+            this.editor.saveState();
+            return { success: `Cell set: a=${a} b=${b} c=${c} α=${alpha} β=${beta} γ=${gamma}` };
+        });
+
+        // supercell: generate a supercell
+        this.register('supercell', ['sc'], 'supercell <na> <nb> <nc> - Generate supercell', { isDestructive: true }, (args) => {
+            if (args.length !== 3) return { error: 'Usage: supercell <na> <nb> <nc>  (e.g. supercell 2 2 2)' };
+            const na = parseInt(args[0]);
+            const nb = parseInt(args[1]);
+            const nc = parseInt(args[2]);
+            if ([na, nb, nc].some(v => isNaN(v) || v < 1)) return { error: 'Repeat counts must be positive integers' };
+
+            const mol = this.editor.molecule;
+            if (!mol || !mol.isCrystal) return { error: 'No crystal loaded' };
+
+            try {
+                const sc = mol.generateSupercell(na, nb, nc);
+                this.editor.moleculeManager.loadCrystal(sc);
+                this.editor.moleculeManager.autoBondPBC();
+                this.editor.rebuildScene();
+                this.editor.saveState();
+                return { success: `Generated ${na}×${nb}×${nc} supercell: ${sc.atoms.length} atoms` };
+            } catch (e) {
+                return { error: e.message };
+            }
+        });
+
+        // wrap: wrap atoms into the unit cell [0,1)
+        this.register('wrap', [], 'wrap - Wrap atoms into the unit cell [0, 1)', { isDestructive: true }, () => {
+            const mol = this.editor.molecule;
+            if (!mol || !mol.isCrystal) return { error: 'No crystal loaded' };
+            mol.wrapAtoms();
+            this.editor.rebuildScene();
+            this.editor.saveState();
+            return { success: `Wrapped ${mol.atoms.length} atoms into unit cell` };
+        });
+
+        // autobond: PBC-aware rebond for crystals
+        this.register('autobond', ['ab'], 'autobond [threshold] - Auto-bond (PBC-aware for crystals)', { isDestructive: true }, (args) => {
+            const threshold = args.length > 0 ? parseFloat(args[0]) : 1.1;
+            if (isNaN(threshold) || threshold <= 0) return { error: 'Invalid threshold' };
+
+            const mol = this.editor.molecule;
+            if (!mol) return { error: 'No molecule loaded' };
+
+            // Clear existing bonds
+            mol.bonds = [];
+            mol.atoms.forEach(a => { a.bonds = []; });
+
+            let count;
+            if (mol.isCrystal && mol.lattice) {
+                count = this.editor.moleculeManager.autoBondPBC(threshold);
+            } else {
+                count = this.editor.moleculeManager.autoBond(threshold);
+            }
+
+            this.editor.rebuildScene();
+            return { success: `Auto-bonded: ${count} bonds created` };
+        });
+
+        // ghost: toggle periodic image (ghost) atoms
+        this.register('ghost', [], 'ghost [on|off] - Toggle periodic image atoms', (args) => {
+            const crm = this.editor.crystalRenderManager;
+            if (!crm) return { error: 'Crystal render manager not available' };
+
+            const mol = this.editor.molecule;
+            if (!mol || !mol.isCrystal) return { error: 'No crystal loaded' };
+
+            let visible = !crm.showGhosts;
+            if (args.length > 0) {
+                const a = args[0].toLowerCase();
+                if (a === 'on' || a === '1' || a === 'true') visible = true;
+                else if (a === 'off' || a === '0' || a === 'false') visible = false;
+            }
+            crm.setGhostAtomsVisible(visible);
+            if (visible) crm.drawGhostAtoms(mol, this.editor.renderManager);
+            return { success: `Ghost atoms ${visible ? 'on' : 'off'}` };
+        });
+
+        // unitcell: toggle the unit cell wireframe
+        this.register('unitcell', ['uc'], 'unitcell [on|off] - Toggle unit cell wireframe', (args) => {
+            const crm = this.editor.crystalRenderManager;
+            if (!crm) return { error: 'Crystal render manager not available' };
+
+            let visible = !crm.showUnitCell;
+            if (args.length > 0) {
+                const a = args[0].toLowerCase();
+                if (a === 'on' || a === '1' || a === 'true') visible = true;
+                else if (a === 'off' || a === '0' || a === 'false') visible = false;
+            }
+            crm.setUnitCellVisible(visible);
+            if (visible) crm.drawUnitCell(this.editor.molecule);
+            return { success: `Unit cell ${visible ? 'shown' : 'hidden'}` };
         });
 
         // Show Command (Unified 2D/3D)

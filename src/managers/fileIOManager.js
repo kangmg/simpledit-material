@@ -3,6 +3,9 @@ import { ErrorHandler } from '../utils/errorHandler.js';
 import { oclManager } from './oclManager.js';
 import { rdkitManager } from './rdkitManager.js';
 import OCL from 'openchemlib';
+import { CIFParser } from './cifParser.js';
+import { POSCARParser } from './poscarParser.js';
+import { Crystal, LatticeParams } from '../crystal.js';
 
 /**
  * Manages file import/export operations
@@ -38,12 +41,14 @@ export class FileIOManager {
     async loadLocalFile(path) {
         try {
             const content = await this.readLocalFile(path);
-            const ext = path.split('.').pop().toLowerCase();
+            const basename = path.split('/').pop().split('\\').pop();
+            const ext = basename.split('.').pop().toLowerCase();
 
             if (ext === 'inp') {
                 await this.runScript(content);
-            } else if (['xyz', 'sdf', 'mol', 'smi'].includes(ext)) {
-                this.loadContent(content, ext);
+            } else if (['xyz', 'sdf', 'mol', 'smi', 'cif', 'poscar', 'contcar'].includes(ext) ||
+                       ['poscar', 'contcar'].includes(basename.toLowerCase())) {
+                this.loadContent(content, ext, basename);
                 console.log(`Loaded file: ${path}`);
             } else {
                 throw new Error(`Unsupported file extension: ${ext}`);
@@ -54,18 +59,23 @@ export class FileIOManager {
         }
     }
 
-    loadContent(content, ext) {
+    loadContent(content, ext, basename = '') {
+        const lowerBase = basename.toLowerCase();
+        // POSCAR / CONTCAR (VASP) — detected by extension OR filename
+        if (ext === 'poscar' || ext === 'contcar' ||
+            lowerBase === 'poscar' || lowerBase === 'contcar') {
+            return this.importPOSCAR(content);
+        }
         switch (ext) {
             case 'xyz':
-                this.importXYZ(content);
-                break;
+                return this.importXYZ(content);
+            case 'cif':
+                return this.importCIF(content);
             case 'sdf':
             case 'mol':
-                this.importSDF(content);
-                break;
+                return this.importSDF(content);
             case 'smi':
-                this.importSMILES(content);
-                break;
+                return this.importSMILES(content);
             default:
                 throw new Error(`Unsupported file extension: ${ext}`);
         }
@@ -1383,6 +1393,13 @@ export class FileIOManager {
         const atomCount = parseInt(lines[0].trim());
         if (isNaN(atomCount)) return ErrorHandler.error('Invalid XYZ format (atom count missing)');
 
+        // ── Extended XYZ: check for Lattice= in comment line ────────────────
+        const commentLine = lines[1] || '';
+        const latticeMatch = commentLine.match(/Lattice\s*=\s*"([^"]+)"/i);
+        if (latticeMatch) {
+            return this._importExtXYZ(lines, atomCount, latticeMatch[1], { shouldClear, autoBond });
+        }
+
         // If shouldClear is true, clear existing
         if (shouldClear) {
             this.editor.molecule.clear();
@@ -1417,5 +1434,196 @@ export class FileIOManager {
 
         this.editor.rebuildScene();
         return ErrorHandler.success(`Imported ${importedCount} atoms from XYZ`);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Extended XYZ (ASE format): Lattice="a11 a12 a13 a21 ..." in comment line
+    // ─────────────────────────────────────────────────────────────────────────
+
+    _importExtXYZ(lines, atomCount, latticeStr, options = {}) {
+        const { shouldClear = true, autoBond = true } = options;
+        try {
+            const nums = latticeStr.trim().split(/\s+/).map(Number);
+            if (nums.length < 9) throw new Error('Lattice string must have 9 components');
+            const va = new THREE.Vector3(nums[0], nums[1], nums[2]);
+            const vb = new THREE.Vector3(nums[3], nums[4], nums[5]);
+            const vc = new THREE.Vector3(nums[6], nums[7], nums[8]);
+
+            // Build LatticeParams from three vectors
+            const a = va.length(), b = vb.length(), c = vc.length();
+            const clamp = v => Math.max(-1, Math.min(1, v));
+            const alpha = Math.acos(clamp(vb.dot(vc) / (b * c))) * (180 / Math.PI);
+            const beta  = Math.acos(clamp(va.dot(vc) / (a * c))) * (180 / Math.PI);
+            const gamma = Math.acos(clamp(va.dot(vb) / (a * b))) * (180 / Math.PI);
+
+            const crystal = new Crystal('Extended XYZ');
+            crystal.setLattice(new LatticeParams(a, b, c, alpha, beta, gamma));
+
+            for (let i = 0; i < atomCount; i++) {
+                const line = (lines[2 + i] || '').trim();
+                const parts = line.split(/\s+/);
+                if (parts.length < 4) continue;
+                const elem = parts[0];
+                const x = parseFloat(parts[1]);
+                const y = parseFloat(parts[2]);
+                const z = parseFloat(parts[3]);
+                if (!isNaN(x) && !isNaN(y) && !isNaN(z)) {
+                    // Extended XYZ positions are Cartesian
+                    const frac = crystal.lattice.cartToFrac(x, y, z);
+                    crystal.addAtomFractional(elem, frac.x, frac.y, frac.z);
+                }
+            }
+
+            if (shouldClear) this.editor.moleculeManager.loadCrystal(crystal);
+            if (autoBond) this.editor.moleculeManager.autoBondPBC();
+            this.editor.rebuildScene();
+            return ErrorHandler.success(`Loaded extended XYZ crystal: ${atomCount} atoms`);
+        } catch (e) {
+            console.error('[importExtXYZ]', e);
+            return ErrorHandler.error('Failed to import extended XYZ: ' + e.message);
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // CIF import / export
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Import a CIF file and load it as the active crystal structure.
+     * @param {string} content CIF text
+     * @returns {Object} Result object
+     */
+    importCIF(content) {
+        try {
+            const crystal = CIFParser.parse(content);
+            const result = this.editor.moleculeManager.loadCrystal(crystal);
+            // Auto-bond with PBC
+            this.editor.moleculeManager.autoBondPBC();
+            this.editor.rebuildScene();
+            return ErrorHandler.success(
+                `Loaded CIF: "${crystal.name}" – ${crystal.atoms.length} atoms` +
+                (crystal.spaceGroup ? ` (${crystal.spaceGroup})` : '')
+            );
+        } catch (e) {
+            ErrorHandler.logError('FileIOManager.importCIF', e);
+            return ErrorHandler.error('Failed to import CIF: ' + e.message);
+        }
+    }
+
+    /**
+     * Export the active crystal structure as CIF text.
+     * @returns {string|null}
+     */
+    exportCIF() {
+        const mol = this.editor.molecule;
+        if (!mol || !mol.isCrystal) {
+            return null; // Not a crystal; caller should check
+        }
+        return CIFParser.generate(mol);
+    }
+
+    /**
+     * Download the active structure as a .cif file.
+     */
+    downloadCIF() {
+        const cif = this.exportCIF();
+        if (!cif) return ErrorHandler.error('Active structure is not a crystal');
+        const name = (this.editor.molecule.name || 'structure').replace(/\s+/g, '_');
+        this._downloadText(cif, `${name}.cif`, 'chemical/x-cif');
+        return ErrorHandler.success('CIF file downloaded');
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // POSCAR import / export
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Import a POSCAR / CONTCAR file.
+     * @param {string} content File text
+     * @returns {Object} Result object
+     */
+    importPOSCAR(content) {
+        try {
+            const crystal = POSCARParser.parse(content);
+            this.editor.moleculeManager.loadCrystal(crystal);
+            this.editor.moleculeManager.autoBondPBC();
+            this.editor.rebuildScene();
+            return ErrorHandler.success(
+                `Loaded POSCAR: "${crystal.name}" – ${crystal.atoms.length} atoms`
+            );
+        } catch (e) {
+            ErrorHandler.logError('FileIOManager.importPOSCAR', e);
+            return ErrorHandler.error('Failed to import POSCAR: ' + e.message);
+        }
+    }
+
+    /**
+     * Export the active crystal structure as POSCAR text.
+     * @returns {string|null}
+     */
+    exportPOSCAR() {
+        const mol = this.editor.molecule;
+        if (!mol || !mol.isCrystal) return null;
+        return POSCARParser.generate(mol);
+    }
+
+    /**
+     * Download the active structure as POSCAR.
+     */
+    downloadPOSCAR() {
+        const poscar = this.exportPOSCAR();
+        if (!poscar) return ErrorHandler.error('Active structure is not a crystal');
+        const name = (this.editor.molecule.name || 'structure').replace(/\s+/g, '_');
+        this._downloadText(poscar, `POSCAR_${name}`, 'text/plain');
+        return ErrorHandler.success('POSCAR file downloaded');
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Helper: trigger a browser file download
+    // ─────────────────────────────────────────────────────────────────────────
+
+    _downloadText(text, filename, mimeType = 'text/plain') {
+        const blob = new Blob([text], { type: mimeType });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.download = filename;
+        a.href = url;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // File input handler (updated to support CIF / POSCAR)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    async handleFileSelect(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const ext = file.name.split('.').pop().toLowerCase();
+        const lowerName = file.name.toLowerCase();
+        const text = await file.text();
+
+        try {
+            if (ext === 'cif') {
+                this.importCIF(text);
+            } else if (ext === 'poscar' || ext === 'contcar' ||
+                       lowerName === 'poscar' || lowerName === 'contcar') {
+                this.importPOSCAR(text);
+            } else if (ext === 'xyz') {
+                this.importXYZ(text);
+            } else if (ext === 'sdf' || ext === 'mol') {
+                this.importSDF(text);
+            } else if (ext === 'smi') {
+                this.importSMILES(text);
+            } else {
+                this.editor.console.printError(`Unsupported file type: ${ext}`);
+            }
+        } catch (e) {
+            this.editor.console.printError(`Error loading file: ${e.message}`);
+        }
+
+        // Reset input so same file can be re-selected
+        event.target.value = '';
     }
 }
