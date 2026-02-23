@@ -1,0 +1,96 @@
+# Test Substitute Command with Benzene
+cls 
+
+new BENZENE
+# 1. Setup Molecules
+# Benzene (Target)
+add mol xyz <<BENZENE
+12
+Benzene
+C 1.395 0.000 0.000
+C 0.698 1.208 0.000
+C -0.698 1.208 0.000
+C -1.395 0.000 0.000
+C -0.698 -1.208 0.000
+C 0.698 -1.208 0.000
+H 2.484 0.000 0.000
+H 1.242 2.151 0.000
+H -1.242 2.151 0.000
+H -2.484 0.000 0.000
+H -1.242 -2.151 0.000
+H 1.242 -2.151 0.000
+BENZENE
+rebond
+time 1
+
+new METHANE
+# Methane (Source 1)
+add mol xyz <<METHANE
+5
+Methane
+C 0.000 0.000 0.000
+H 1.089 0.000 0.000
+H -0.363 1.027 0.000
+H -0.363 -0.513 0.889
+H -0.363 -0.513 -0.889
+METHANE
+rebond
+time 1
+
+new WATER
+# Water (Source 2)
+add mol xyz <<WATER
+3
+Water
+O 0.000 0.000 0.000
+H 0.957 0.000 0.000
+H -0.240 0.927 0.000
+WATER
+rebond
+time 1
+
+# 2. Test Explicit Substitution (Benzene + Methane -> Toluene)
+# Target: Benzene, Anchor=C1(0), Leaving=H7(6)
+# Source: Methane, Anchor=C1(0), Leaving=H2(1)
+# Note: Indices are 0-based.
+# Benzene C1 is index 0. H7 is index 6.
+# Methane C1 is index 0. H2 is index 1.
+
+switch BENZENE
+time 1
+
+sub grp 6 0 -n METHANE 1 0
+# Expect: H(6) removed, Methane attached at C(0). Methane H(1) removed.
+time 2
+
+sub grp 7 2 -n WATER 2 0 
+time 2
+
+# 3. Test Dummy Substitution (Benzene + Water -> Phenol)
+new WATER_D
+add mol xyz <<WATER_D
+3
+Water_D
+O 0.000 0.000 0.000
+H 0.957 0.000 0.000
+H -0.240 0.927 0.000
+WATER_D
+rebond
+
+# Change H(1) to X (Dummy)
+sub atom 1 X
+time 1
+
+switch BENZENE
+
+# Change H(9) to X (Dummy)
+sub atom 9 X
+time 1
+
+# Target: Benzene, Anchor=C(5). Implicit Leaving=X(9)
+# Source: Water_D, Anchor=O(0). Implicit Leaving=X(1)
+sub grp 5 -n WATER_D 0
+# Expect: X removed, Water attached.
+time 2
+
+del atoms :

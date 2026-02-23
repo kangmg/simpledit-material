@@ -1,0 +1,25 @@
+# Batch Commands Test
+# Tests: backslash separator, multi-line execution
+cls 
+
+# Test backslash separator
+add atom C 0 0 0 \ time 0.5 \ add atom C 1.5 0 0 \ time 0.5 # multi-line command
+add atom C 3.0 0 0 \ time 0.5 \ add bond 0 1 \ time 0.5 \ add bond 1 2 
+time 1
+
+list
+time 1
+
+# Test comments
+add atom H 0 1 0  # Another atom
+time 1
+
+# Clear and rebuild
+del atom :
+time 1
+
+add atom C 0 0 0 \ add atom C 1.5 0 0
+add bond 0 1
+time 3
+
+del atom :

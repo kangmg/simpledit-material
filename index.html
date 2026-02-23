@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>simpledit-material</title>
+  <link rel="stylesheet" href="./style.css" />
+  <link rel="icon" type="image/png" sizes="32x32" href="./assets/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="./assets/favicon-16x16.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="./assets/apple-touch-icon.png" />
+  <link rel="manifest" href="./assets/site.webmanifest" />
+  <meta name="msapplication-config" content="./assets/browserconfig.xml" />
+
+  <!-- RDKit WASM Library -->
+  <script src="./lib/rdkit/RDKit_minimal.js"></script>
+  <!-- JSME Editor -->
+  <script src="./lib/jsme/jsme.nocache.js"></script>
+</head>
+
+<body>
+  <div id="app">
+    <!-- Top-right action buttons -->
+    <div class="top-right-actions">
+      <button id="btn-toggle-console" class="action-icon-btn" title="Toggle Console" style="margin-right: 10px;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M5.0333 14.8284L6.44751 16.2426L10.6902 12L6.44751 7.75733L5.0333 9.17155L7.86172 12L5.0333 14.8284Z"
+            fill="currentColor" />
+          <path d="M15 14H11V16H15V14Z" fill="currentColor" />
+          <path fill-rule="evenodd" clip-rule="evenodd"
+            d="M2 2C0.895431 2 0 2.89543 0 4V20C0 21.1046 0.89543 22 2 22H22C23.1046 22 24 21.1046 24 20V4C24 2.89543 23.1046 2 22 2H2ZM22 4H2L2 20H22V4Z"
+            fill="currentColor" />
+        </svg>
+      </button>
+      <button id="btn-export-png" class="action-icon-btn" title="Export PNG">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path
+            d="M11 5C11 4.44772 11.4477 4 12 4C12.5523 4 13 4.44772 13 5V12.1578L16.2428 8.91501L17.657 10.3292L12.0001 15.9861L6.34326 10.3292L7.75748 8.91501L11 12.1575V5Z"
+            fill="currentColor" />
+          <path d="M4 14H6V18H18V14H20V18C20 19.1046 19.1046 20 18 20H6C4.89543 20 4 19.1046 4 18V14Z"
+            fill="currentColor" />
+        </svg>
+      </button>
+    </div>
+
+    <!-- Floating Sidebar -->
+    <div class="floating-sidebar">
+      <div class="sidebar-header" style="display: flex; align-items: center; margin-bottom: 15px;">
+        <button id="btn-toggle-sidebar" class="icon-btn-ghost"
+          style="margin-right: 8px; padding: 4px; color: #888; background: none; border: none; cursor: pointer;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path
+              d="M18 1.5033V3.5033L13 3.5033V7.6749L14.8285 5.84644L16.2427 7.26066L12 11.5033L7.75739 7.26066L9.17161 5.84644L11 7.67483V3.5033L6 3.5033V1.5033L18 1.5033Z"
+              fill="currentColor" />
+            <path
+              d="M18 20.4967V22.4967H6V20.4967H11V16.3251L9.17154 18.1536L7.75732 16.7393L12 12.4967L16.2426 16.7393L14.8284 18.1536L13 16.3252V20.4967H18Z"
+              fill="currentColor" />
+          </svg>
+        </button>
+        <div class="sidebar-title" style="margin-bottom: 0;">Simpl<span style="color: #1E90FF;">edit</span></div>
+      </div>
+      <div id="sidebar-content">
+
+        <div class="tool-section">
+          <div class="section-label">Tools</div>
+          <button id="btn-edit" class="icon-btn active" title="Edit Mode">
+            <div style="display: flex; flex-direction: column; align-items: flex-start;">
+              <span>Edit</span>
+              <span class="btn-sublabel" style="font-size: 11px; margin-top: 2px; display: none;">Manual</span>
+            </div>
+          </button>
+          <div id="edit-submodes" class="submode-container" style="display: flex;">
+            <button id="btn-edit-manual" class="submode-btn active" title="Manual editing">Manual</button>
+            <button id="btn-edit-smart" class="submode-btn" title="Smart atom placement">Smart</button>
+          </div>
+
+          <button id="btn-select" class="icon-btn" title="Select Mode">
+            <div style="display: flex; flex-direction: column; align-items: flex-start;">
+              <span>Select</span>
+              <span class="btn-sublabel" style="font-size: 11px; margin-top: 2px; display: none;">Lasso</span>
+            </div>
+          </button>
+          <div id="select-submodes" class="submode-container" style="display: none;">
+            <button id="btn-select-lasso" class="submode-btn active" title="Lasso Selection">Lasso</button>
+            <button id="btn-select-rectangle" class="submode-btn" title="Rectangle Selection">Rectangle</button>
+          </div>
+
+          <button id="btn-move" class="icon-btn" title="Move Mode">
+            <div style="display: flex; flex-direction: column; align-items: flex-start;">
+              <span>Move & Rotate</span>
+              <span class="btn-sublabel" style="font-size: 11px; margin-top: 2px; display: none;">Translate</span>
+            </div>
+          </button>
+          <div id="move-submodes" class="submode-container" style="display: none;">
+            <button id="btn-move-translate" class="submode-btn active" title="Translate Fragment">Translate</button>
+            <button id="btn-move-orbit" class="submode-btn" title="Orbit Rotation">Orbit</button>
+            <button id="btn-move-trackball" class="submode-btn" title="Trackball Rotation">Trackball</button>
+          </div>
+
+          <div style="display: flex; gap: 5px; margin-top: 5px;">
+            <button id="btn-undo" class="action-btn" style="flex: 1;">Undo</button>
+            <button id="btn-redo" class="action-btn" style="flex: 1;">Redo</button>
+          </div>
+        </div>
+
+        <div class="tool-section">
+          <div class="section-label">View</div>
+          <div class="control-row">
+            <select id="camera-mode">
+              <option value="orbit">Orbit Camera</option>
+              <option value="trackball" selected>Trackball Camera</option>
+            </select>
+          </div>
+          <div class="control-row">
+            <select id="projection-mode">
+              <option value="perspective">Perspective</option>
+              <option value="orthographic" selected>Orthographic</option>
+            </select>
+          </div>
+          <div class="control-row">
+            <select id="color-scheme">
+              <option value="jmol">Jmol Colors</option>
+              <option value="cpk">CPK Colors</option>
+            </select>
+          </div>
+          <button id="btn-toggle-labels" class="action-btn">Show Labels</button>
+        </div>
+
+        <div class="tool-section">
+          <div class="section-label">Properties</div>
+          <div id="selection-info" style="margin-bottom: 8px; font-size: 12px; color: #888;">No selection</div>
+
+          <div class="control-row">
+            <button id="btn-element-select" class="action-btn"
+              style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+              <span id="element-fg-label" style="color: #888;">Element</span>
+              <span id="current-element-symbol" style="font-weight: bold; color: white;">C</span>
+            </button>
+          </div>
+
+          <!-- Molecule List -->
+          <div class="control-row" style="margin-top: 15px;">
+            <div class="section-label">Molecules</div>
+            <div id="molecule-list" class="molecule-list"></div>
+            <div style="margin-top: 5px; display: flex; gap: 5px;">
+              <button id="btn-new-molecule" class="action-btn" style="flex: 1;">+ New</button>
+              <button id="btn-delete-molecule" class="action-btn" style="flex: 1; background: #ff4444;">Del</button>
+            </div>
+          </div>
+
+          <div class="control-row">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+              <span style="font-size: 12px; color: #888;">Bond Threshold</span>
+              <span id="val-bond-threshold" style="font-size: 12px; color: white;">1.2</span>
+            </div>
+            <input type="range" id="bond-threshold" min="0.8" max="2.0" step="0.1" value="1.2">
+          </div>
+          <button id="btn-auto-bond" class="action-btn">Adjust Bond</button>
+          <button id="btn-coord-editor" class="action-btn" style="margin-top: 10px;">Atomic Coordinate
+            Editor</button>
+          <button id="btn-edit-2d" class="action-btn" style="margin-top: 10px;">Edit 2D</button>
+        </div>
+
+        <div id="geometry-controls" class="tool-section" style="display: none;">
+          <div class="section-label">Geometry</div>
+          <div id="length-control" style="display: none; margin-bottom: 10px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+              <span style="font-size: 12px; color: #888;">Length (Å)</span>
+              <input type="number" id="val-length"
+                style="width: 60px; font-size: 12px; color: white; background: transparent; border: 1px solid #555; border-radius: 4px; padding: 2px; text-align: right;"
+                step="0.01">
+            </div>
+            <input type="range" id="input-length" min="0.5" max="5.0" step="0.01">
+          </div>
+          <div id="angle-control" style="display: none; margin-bottom: 10px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+              <span style="font-size: 12px; color: #888;">Angle (°)</span>
+              <input type="number" id="val-angle"
+                style="width: 60px; font-size: 12px; color: white; background: transparent; border: 1px solid #555; border-radius: 4px; padding: 2px; text-align: right;"
+                step="0.1">
+            </div>
+            <input type="range" id="input-angle" min="0" max="180" step="0.1">
+          </div>
+          <div id="dihedral-control" style="display: none; margin-bottom: 10px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+              <span style="font-size: 12px; color: #888;">Dihedral (°)</span>
+              <input type="number" id="val-dihedral"
+                style="width: 60px; font-size: 12px; color: white; background: transparent; border: 1px solid #555; border-radius: 4px; padding: 2px; text-align: right;"
+                step="0.1">
+            </div>
+            <input type="range" id="input-dihedral" min="-180" max="180" step="0.1">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <canvas id="editor-canvas"></canvas>
+
+    <!-- Measurement Info Overlay -->
+    <div id="measurement-info"></div>
+    <div id="measurements"></div>
+
+    <!-- Modals -->
+    <div id="modal-backdrop"
+      style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 999; backdrop-filter: blur(2px);">
+    </div>
+
+    <div id="coord-modal" class="modal-content"
+      style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 25px; z-index: 1000; width: 600px; max-width: 90%;">
+      <div class="modal-header"
+        style="display: flex; align-items: center; justify-content: center; margin-bottom: 20px; position: relative;">
+        <div class="mac-window-controls" style="position: absolute; left: 0;">
+          <button id="coord-close" class="mac-btn mac-close-btn"></button>
+          <button id="coord-minimize" class="mac-btn mac-minimize-btn"></button>
+          <button id="coord-maximize" class="mac-btn mac-maximize-btn"></button>
+        </div>
+        <h3 style="margin: 0; color: white;">Atomic Coordinate Editor</h3>
+      </div>
+      <div style="margin-bottom: 15px; display: flex; align-items: center; gap: 15px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <label for="coord-format" style="color: #aaa;">Format:</label>
+          <select id="coord-format" style="width: auto; background: #333; color: white; border: none; padding: 5px;">
+            <option value="xyz">XYZ</option>
+            <option value="smi">SMILES</option>
+            <option value="sdf">SDF</option>
+            <option value="json">JSON</option>
+          </select>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="color: #aaa; font-size: 13px;">Split Fragments</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="chk-split-fragments">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+      <textarea id="coord-input" rows="15"
+        style="width: 100%; color: #e0e0e0; padding: 15px; font-family: 'JetBrains Mono', monospace; box-sizing: border-box; resize: vertical;"></textarea>
+      <div style="margin-top: 20px; display: flex; justify-content: space-between;">
+        <button id="btn-coord-copy" class="action-btn" style="width: auto;">Copy to Clipboard</button>
+        <div style="display: flex; gap: 10px;">
+          <!-- Cancel button removed -->
+          <button id="btn-coord-import" class="primary-btn"
+            style="width: auto; padding: 8px 20px; border-radius: 6px; border: none; cursor: pointer;">Import
+            Data</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="pt-modal" class="modal-content"
+      style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 25px; z-index: 1000; max-height: 80vh; overflow-y: auto; min-width: 450px;">
+      <div class="modal-header"
+        style="display: flex; align-items: center; justify-content: center; margin-bottom: 15px; position: relative;">
+        <div class="mac-window-controls" style="position: absolute; left: 0;">
+          <button class="mac-btn mac-close-btn close-pt"></button>
+          <button class="mac-btn mac-minimize-btn close-pt"></button>
+          <button class="mac-btn mac-maximize-btn maximize-pt"></button>
+        </div>
+        <!-- Toggle Tabs -->
+        <div id="element-fg-tabs" style="display: flex; background: #333; border-radius: 6px; padding: 2px;">
+          <button id="tab-periodic-table" class="editor-toggle-btn active"
+            style="padding: 6px 16px; border: none; background: #555; color: white; border-radius: 4px; cursor: pointer; font-size: 13px;">Periodic
+            Table</button>
+          <button id="tab-functional-groups" class="editor-toggle-btn"
+            style="padding: 6px 16px; border: none; background: transparent; color: #aaa; border-radius: 4px; cursor: pointer; font-size: 13px;">Functional
+            Groups</button>
+        </div>
+      </div>
+      <!-- Periodic Table View -->
+      <div id="periodic-table"
+        style="display: grid; grid-template-columns: repeat(18, 36px); gap: 4px; margin-top: 10px;"></div>
+      <!-- Functional Groups View -->
+      <div id="functional-groups-grid" style="display: none; flex-direction: column; gap: 15px;"></div>
+    </div>
+
+    <!-- JSME Editor Modal -->
+    <div id="jsme-modal" class="modal-content"
+      style="display: none; width: 600px; height: 500px; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 2000; background: #1e1e1e; border-radius: 12px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); border: 1px solid #333; flex-direction: column;">
+      <div class="modal-header"
+        style="padding: 15px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center;">
+        <div class="mac-window-controls">
+          <button id="btn-jsme-close" class="mac-btn mac-close-btn"></button>
+          <button id="btn-jsme-minimize" class="mac-btn mac-minimize-btn"></button>
+          <button id="btn-jsme-maximize" class="mac-btn mac-maximize-btn"></button>
+        </div>
+        <span style="color: #e0e0e0; font-weight: 600;">2D Molecular Editor</span>
+        <div style="width: 50px;"></div>
+      </div>
+      <div style="flex: 1; background: white; position: relative; overflow: hidden; margin: 10px;">
+        <div id="jsme-container"
+          style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: block;"></div>
+        <div id="ocl-editor-container"
+          style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none;"></div>
+      </div>
+      <div
+        style="padding: 15px; border-top: 1px solid #333; display: flex; justify-content: space-between; align-items: center; background: #1e1e1e;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="color: #aaa; font-size: 13px;">Editor:</span>
+          <div style="display: flex; background: #333; border-radius: 6px; padding: 2px;">
+            <button id="btn-editor-jsme" class="editor-toggle-btn active"
+              style="padding: 4px 12px; border: none; background: #555; color: white; border-radius: 4px; cursor: pointer; font-size: 12px;">JSME</button>
+            <button id="btn-editor-ocl" class="editor-toggle-btn"
+              style="padding: 4px 12px; border: none; background: transparent; color: #aaa; border-radius: 4px; cursor: pointer; font-size: 12px;">OCL</button>
+          </div>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button id="btn-sync-mol" class="action-btn" style="background: #444; border: 1px solid #555;"
+            title="Load connectivity only (Single bonds)">Sync</button>
+          <button id="btn-sanitize-mol" class="action-btn" style="background: #444; border: 1px solid #555;"
+            title="Infer bond orders from geometry">Sanitize</button>
+          <button id="btn-jsme-import" class="action-btn primary-btn">Update</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Console Panel -->
+    <div id="console-panel" class="console-panel">
+      <div class="console-header">
+        <div class="mac-window-controls">
+          <button id="console-close" class="mac-btn mac-close-btn"></button>
+          <button id="console-minimize" class="mac-btn mac-minimize-btn"></button>
+          <button id="console-maximize" class="mac-btn mac-maximize-btn"></button>
+        </div>
+        <div class="console-title">Console</div>
+      </div>
+      <div id="console-output" class="console-output"></div>
+      <div class="console-input-container">
+        <span id="console-prompt" class="console-prompt">&gt;</span>
+        <textarea id="console-input" class="console-input" rows="1" spellcheck="false"></textarea>
+      </div>
+      <!-- Resize Handles -->
+      <div class="resize-handle n"></div>
+      <div class="resize-handle e"></div>
+      <div class="resize-handle s"></div>
+      <div class="resize-handle w"></div>
+      <div class="resize-handle ne"></div>
+      <div class="resize-handle se"></div>
+      <div class="resize-handle sw"></div>
+      <div class="resize-handle nw"></div>
+    </div>
+  </div>
+  <script type="module" src="./src/main.js"></script>
+</body>
+
+</html>

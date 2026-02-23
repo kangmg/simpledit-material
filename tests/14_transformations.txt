@@ -1,0 +1,147 @@
+# Transformation Commands Test
+# Tests: rot, trans, center
+cls
+
+add mol xyz <<EOF
+3
+Water
+O  0.000  0.000  0.000
+H  0.757  0.586  0.000
+H -0.757  0.586  0.000
+EOF
+rebond
+
+time 1
+
+# Test rotation around X axis (45 degrees in increments)
+rot 10 0 0 \time 0.2
+rot 10 0 0 \time 0.2
+rot 10 0 0 \time 0.2
+rot 10 0 0 \time 0.2
+rot 15 0 0 \time 0.2
+
+rot -10 0 0 \time 0.2
+rot -10 0 0 \time 0.2
+rot -10 0 0 \time 0.2
+rot -10 0 0 \time 0.2
+rot -5 0 0 \time 0.2
+
+# Test rotation around Y axis (90 degrees in increments)
+rot 0 10 0 \time 0.2
+rot 0 10 0 \time 0.2
+rot 0 10 0 \time 0.2
+rot 0 10 0 \time 0.2
+rot 0 10 0 \time 0.2
+rot 0 10 0 \time 0.2
+rot 0 10 0 \time 0.2
+rot 0 10 0 \time 0.2
+rot 0 10 0 \time 0.2
+
+
+rot 0 -10 0 \time 0.2
+rot 0 -10 0 \time 0.2
+rot 0 -10 0 \time 0.2
+rot 0 -10 0 \time 0.2
+rot 0 -10 0 \time 0.2
+rot 0 -10 0 \time 0.2
+rot 0 -10 0 \time 0.2
+rot 0 -10 0 \time 0.2
+rot 0 -10 0 \time 0.2
+
+# Test rotation around Z axis (30 degrees in increments)
+rot 0 0 10 \time 0.2
+rot 0 0 10 \time 0.2
+rot 0 0 10 \time 0.2
+
+rot 0 0 -10 \time 0.2
+rot 0 0 -10 \time 0.2
+rot 0 0 -10 \time 0.2
+
+# Test translation (incremental)
+trans 0.5 0 0 \time 0.2
+trans 0.5 0 0 \time 0.2
+trans 0.5 0 0 \time 0.2
+trans 0.5 0 0 \time 0.2
+
+trans -0.5 0 0 \time 0.2
+trans -0.5 0 0 \time 0.2
+trans -0.5 0 0 \time 0.2
+trans -0.5 0 0
+time 1
+
+trans 0 0.5 0
+trans 0 0.5 0
+trans 0 0.5 0
+trans 0 0.5 0
+trans 0 0.5 0
+trans 0 0.5 0
+time 1
+
+trans 0 -0.5 0
+trans 0 -0.5 0
+trans 0 -0.5 0
+trans 0 -0.5 0
+trans 0 -0.5 0
+trans 0 -0.5 0
+time 1
+
+# Move molecule off-center
+trans 0.5 0.5 0.5
+trans 0.5 0.5 0.5
+trans 0.5 0.5 0.5
+trans 0.5 0.5 0.5
+trans 0.5 0.5 0.5
+trans 0.5 0.5 0.5
+trans 0.5 0.5 0.5
+trans 0.5 0.5 0.5
+trans 0.5 0.5 0.5
+trans 0.5 0.5 0.5
+time 1
+
+# Test center command
+center
+time 1
+
+# Rotate after centering (incremental)
+rot 10 0 0 \time 0.2
+rot 10 0 0 \time 0.2
+rot 10 0 0 \time 0.2
+rot 10 0 0 \time 0.2
+rot 5 0 0 \time 0.2
+
+rot 0 10 0 \time 0.2
+rot 0 10 0 \time 0.2
+rot 0 10 0 \time 0.2
+rot 0 10 0 \time 0.2
+rot 5 0 0 \time 0.2
+
+# Center again
+center
+time 1
+
+# Combined transformations (incremental)
+rot 0 0 10 \time 0.2
+rot 0 0 10 \time 0.2
+rot 0 0 10 \time 0.2
+rot 0 0 10 \time 0.2
+rot 0 0 5 \time 0.2
+
+trans 0.5 0 0 \time 0.2
+trans 0.5 0 0 \time 0.2
+trans 0.5 0 0 \time 0.2
+trans 0.5 0 0 \time 0.2
+trans 0.5 0 0 \time 0.2
+trans 0.5 0 0 \time 0.2
+
+rot 0 10 0 \time 0.2
+rot 0 10 0 \time 0.2
+rot 0 10 0 \time 0.2
+rot 0 10 0 \time 0.2
+rot 0 10 0 \time 0.2
+rot 0 10 0 \time 0.2
+rot 0 10 0 \time 0.2
+rot 0 10 0 \time 0.2
+rot 0 10 0 \time 0.2
+rot 0 10 0 \time 0.2
+
+del atoms :

@@ -1,0 +1,51 @@
+# Display & Labels Test
+# Tests: label modes, camera, projection
+cls 
+set threshold 1.3
+
+# Create test molecule
+add mol xyz <<EOF
+8
+
+F        1.34840       -0.55490        0.14980
+F       -1.34850       -0.55480       -0.14980
+C        0.69620        0.55490       -0.29020
+C       -0.69610        0.55490        0.29020
+H        0.66790        0.50740       -1.38190
+H        1.26370        1.43390        0.02570
+H       -1.26350        1.43400       -0.02550
+H       -0.66780        0.50730        1.38190
+EOF
+rebond
+time 1
+
+# Test label modes
+label -s
+time 1
+
+label -n
+time 1
+
+label -a
+time 1
+
+label -o
+time 1
+
+# Test camera modes
+camera orbit
+time 1
+
+camera trackball
+time 1
+
+# Test projection modes
+projection ps
+time 1
+
+projection ot
+time 1
+
+projection ps
+
+del atom :

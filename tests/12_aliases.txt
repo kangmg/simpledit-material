@@ -1,0 +1,32 @@
+# Aliases & Flags Test
+# Tests: tr, set dist, paste -o, label -o
+cls 
+
+# Create molecule
+add atom C 0 0 0
+add atom O 1.5 0 0
+rebond
+time 1
+
+# Test trans alias (tr)
+tr 1 1 0
+time 1
+
+# Test set dist alias
+set dist 0 1 2.0
+measure 0 1
+time 1
+
+# Test paste -o
+select :
+copy
+paste -o 3
+time 1
+
+# Test label -o (off)
+label -s
+time 0.5
+label -o
+time 1
+
+del atom :

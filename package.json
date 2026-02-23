@@ -1,0 +1,42 @@
+{
+    "name": "simpledit-material",
+    "version": "0.1.0-beta.1",
+    "description": "JavaScript-based molecular editor with full console integration and advanced geometry manipulation",
+    "author": "kangmg <kangmg@korea.ac.kr>",
+    "license": "MIT",
+    "type": "module",
+    "bin": {
+        "simpledit-material": "./bin/simpledit.js"
+    },
+    "keywords": [
+        "molecular-editor",
+        "chemistry",
+        "computational-chemistry",
+        "3d-editor",
+        "molecular-visualization"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/kangmg/simpledit-material.git"
+    },
+    "homepage": "https://kangmg.github.io/simpledit-material/",
+    "bugs": {
+        "url": "https://github.com/kangmg/simpledit-material/issues"
+    },
+    "scripts": {
+        "dev": "vite",
+        "build": "vite build",
+        "preview": "vite preview",
+        "docs": "documentation build src/**/*.js -f html -o docs/api"
+    },
+    "devDependencies": {
+        "documentation": "^14.0.3",
+        "vite": "^5.0.0"
+    },
+    "dependencies": {
+        "@rdkit/rdkit": "^2025.3.4-1.0.0",
+        "jsme-editor": "^2024.4.29",
+        "openchemlib": "^9.18.2",
+        "three": "^0.160.1"
+    }
+}

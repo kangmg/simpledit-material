@@ -1,0 +1,441 @@
+# ========================================
+# Simpledit Introduction - Feature Showcase
+# ========================================
+# This script demonstrates key features of Simpledit
+# through an interactive walkthrough
+set bond threshold 1.2
+cls
+time 1
+
+# ========================================
+# 1. Molecule Building & Substitution
+# ========================================
+
+# Create benzene ring
+new "Benzene"
+add mol xyz <<EOF
+12
+
+C  0.000  1.400  0.000
+C  1.212  0.700  0.000
+C  1.212 -0.700  0.000
+C  0.000 -1.400  0.000
+C -1.212 -0.700  0.000
+C -1.212  0.700  0.000
+H  0.000  2.490  0.000
+H  2.156  1.245  0.000
+H  2.156 -1.245  0.000
+H  0.000 -2.490  0.000
+H -2.156 -1.245  0.000
+H -2.156  1.245  0.000
+EOF
+rebond
+time 0.5
+
+# Create methyl group for substitution
+new "Methyl"
+add mol xyz <<EOF
+5
+
+C  0.000  0.000  0.000
+H  1.089  0.000  0.000
+H -0.363  1.027  0.000
+H -0.363 -0.513  0.889
+H -0.363 -0.513 -0.889
+EOF
+rebond
+time 0.5
+
+# Substitute H with methyl (creating toluene)
+switch "Benzene"
+sub grp 6 0 -n "Methyl" 1 0
+time 0.5
+
+
+new WATER
+# Water (Source 2)
+add mol xyz <<WATER
+3
+Water
+O 0.000 0.000 0.000
+H 0.957 0.000 0.000
+H -0.240 0.927 0.000
+WATER
+rebond
+time 0.5
+
+switch "Benzene"
+sub grp 8 3 -n "WATER" 1 0
+time 0.5
+
+
+
+# ========================================
+# 2. Distance Adjustment - Incremental Changes
+# ========================================
+
+# Select C-C bond (benzene-methyl connection)
+select 0 1
+time 0.2
+
+# Increase distance by 0.2 Angstroms (5 times)
+set dist 0 10 1.7
+time 0.2
+set dist 0 10 1.9
+time 0.2
+set dist 0 10 2.1
+time 0.2
+set dist 0 10 2.3
+time 0.2
+set dist 0 10 2.5
+time 0.2
+
+# Decrease back to original
+set dist 0 10 2.3
+time 0.2
+set dist 0 10 2.1
+time 0.2
+set dist 0 10 1.9
+time 0.2
+set dist 0 10 1.7
+time 0.2
+set dist 0 10 1.5
+time 0.2
+
+# ========================================
+# 3. Angle Adjustment
+# ========================================
+
+# Select angle in benzene ring
+select 3 14 15
+time 0.2
+
+measure
+time 0.3
+
+# Adjust angle incrementally (5 degrees each)
+set angle 3 14 15 120
+time 0.2
+set angle 3 14 15 135
+time 0.2
+set angle 3 14 15 150
+time 0.2
+set angle 3 14 15 165
+time 0.2
+set angle 3 14 15 180
+time 0.2
+set angle 3 14 15 195
+time 0.2
+set angle 3 14 15 210
+time 0.2
+set angle 3 14 15 225
+time 0.2
+set angle 3 14 15 240
+time 0.2
+
+
+# ========================================
+# 4. Dihedral Rotation - Methyl Group
+# ========================================
+
+# Select dihedral for methyl rotation
+select 5 0 1 7
+time 0.2
+
+measure
+time 0.3
+
+# Rotate methyl group (10 degrees increments)
+set dihedral 5 0 10 12 140
+time 0.2
+set dihedral 5 0 10 12 160
+time 0.2
+set dihedral 5 0 10 12 180
+time 0.2
+set dihedral 5 0 10 12 200
+time 0.2
+set dihedral 5 0 10 12 220
+time 0.2
+set dihedral 5 0 10 12 240
+time 0.2
+set dihedral 5 0 10 12 260
+time 0.2
+set dihedral 5 0 10 12 280
+time 0.2
+set dihedral 5 0 10 12 300
+time 0.2
+set dihedral 5 0 10 12 320
+time 0.2
+set dihedral 5 0 10 12 340
+time 0.2
+set dihedral 5 0 10 12 360
+time 0.2
+set dihedral 5 0 10 12 370
+time 0.2
+set dihedral 5 0 10 12 390
+time 0.2
+set dihedral 5 0 10 12 410
+time 0.2
+set dihedral 5 0 10 12 430
+time 0.2
+
+
+
+# ========================================
+# 5. Water Cluster - Selection Demo
+# ========================================
+
+# Create water cluster (10 water molecules)
+new "Water Cluster"
+add mol xyz <<EOF
+30
+
+O   -1.3726747  -0.1552490   2.4000752
+H   -1.5225698   0.6430745   1.8936733
+H   -1.8927283  -0.0364901   3.1948536
+O    0.1006113   0.8761179  -2.6670173
+H    0.7362920   0.2268962  -2.3659307
+H    0.2618820   0.9516930  -3.6075024
+O   -1.8195048  -1.8868228   0.2782001
+H   -2.0644814  -1.2422095  -0.3856463
+H   -1.7711378  -1.3861331   1.0925726
+O   -1.7639423   2.0188032   0.7720364
+H   -0.9076391   2.2250180   0.3972668
+H   -2.2268131   2.8564890   0.7883164
+O    0.5868449   2.4518037  -0.4466459
+H    1.3420653   1.9964944  -0.0743993
+H    0.4521329   2.0364701  -1.2984573
+O    1.9140885  -0.8032225  -1.6098292
+H    2.2977630  -0.2531253  -0.9268805
+H    1.5313918  -1.5418165  -1.1362744
+O   -2.2512316   0.2688588  -1.3371564
+H   -2.1976819   0.9230125  -0.6404158
+H   -1.4950439   0.4502556  -1.8952849
+O    2.6083833   0.8285405   0.5195594
+H    3.4598644   0.9974440   0.9229001
+H    2.1638626   0.2437857   1.1333144
+O    1.2670215  -0.9296743   2.0460502
+H    0.3793360  -0.6546975   2.2754716
+H    1.1429372  -1.6500684   1.4280960
+O    0.7176653  -2.7097787  -0.0031831
+H    0.7227966  -3.6649391  -0.0654267
+H   -0.2100590  -2.4764337   0.0301288
+EOF
+rebond
+time 0.5
+
+# Select and delete first water molecule
+select 0 1 2
+time 0.3
+del atom 0 1 2
+time 0.3
+
+# Select and delete second water
+select 0 1 2
+time 0.3
+del atom 0 1 2
+time 0.3
+
+
+# ========================================
+# 6. Transformations - Rotation & Translation
+# ========================================
+
+# Center molecule
+center
+time 0.2
+
+# Rotate incrementally
+rotate 30 0 0
+time 0.2
+rotate 30 0 0
+time 0.2
+rotate 30 0 0
+time 0.2
+
+rotate 0 30 0
+time 0.2
+rotate 0 30 0
+time 0.2
+rotate 0 30 0
+time 0.2
+
+rotate 0 0 45
+time 0.2
+rotate 0 0 45
+time 0.2
+rotate 0 0 45
+time 0.2
+
+# Translate
+trans 2 0 0
+time 0.2
+trans 0 2 0
+time 0.2
+trans -2 -2 0
+time 0.5
+
+# ========================================
+# 7. Indexing & Selection
+# ========================================
+
+switch "Benzene"
+time 0.2
+
+# Show all atoms with indices
+label -n
+time 0.5
+
+# Sequential selection demonstration
+select 0
+time 0.2
+select 0 1
+time 0.2
+select 0 1 2
+time 0.2
+select 0:3
+time 0.3
+
+# Range selection
+select 0:5
+time 0.3
+
+# Select all
+select :
+time 0.3
+
+# Clear selection
+select 0
+time 0.2
+
+label -s
+time 0.3
+
+# ========================================
+# 8. Visual Scaling - Atoms & Bonds
+# ========================================
+
+# Incrementally increase atom size
+set scale atom 1.2
+time 0.2
+set scale atom 1.4
+time 0.2
+set scale atom 1.6
+time 0.2
+set scale atom 1.8
+time 0.2
+set scale atom 2.0
+time 0.3
+
+# Reset and adjust bond thickness
+set scale atom 1.0
+time 0.2
+
+set scale bond 1.2
+time 0.2
+set scale bond 1.4
+time 0.2
+set scale bond 1.6
+time 0.2
+set scale bond 1.8
+time 0.2
+set scale bond 2.0
+time 0.3
+
+# Reset to normal
+set scale bond 1.0
+time 0.2
+
+# ========================================
+# 9. Bond Threshold & Rebonding
+# ========================================
+
+# Create a simple molecule for threshold demo
+new "Threshold Demo"
+add atom C 0 0 0
+add atom C 1.5 0 0
+add atom C 3.0 0 0
+add atom C 4.8 0 0
+time 0.3
+
+# Show current threshold
+list
+time 0.3
+
+# Adjust threshold and rebond
+set threshold 1.8
+rebond
+time 0.3
+
+set threshold 2.5
+rebond
+time 0.3
+
+set threshold 3.5
+rebond
+time 0.3
+
+set threshold 5.0
+rebond
+time 0.5
+
+# Reset to reasonable threshold
+set threshold 1.2
+rebond
+time 0.5
+
+# ========================================
+# 10. Manual Bond Operations
+# ========================================
+
+# Remove a bond
+del bond 1 2
+time 0.3
+
+# Add it back
+add bond 1 2
+time 0.3
+
+# Add extra bond
+add bond 0 3
+time 0.3
+
+# Remove it
+del bond 0 3
+time 0.3
+
+# ========================================
+# Finale - Multiple Molecules View
+# ========================================
+
+# Show all molecules
+list mols
+time 0.5
+
+# Switch between molecules
+switch 0
+time 0.2
+switch 1
+time 0.2
+switch 2
+time 0.2
+
+# Final view
+projection ortho
+time 0.3
+camera trackball
+time 0.3
+
+label -a
+time 0.5
+
+label -o
+time 0.2
+
+# ========================================
+# End of Introduction
+# ========================================
+# Thank you for exploring Simpledit!
+# For more information, visit:
+# https://kangmg.github.io/simpledit/tutorial/
+# ========================================

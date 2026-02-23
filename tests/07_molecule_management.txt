@@ -1,0 +1,71 @@
+# Molecule Management Test
+# Tests: new, switch, rename, remove, molecules
+cls 
+
+# Create first molecule
+new "Water"
+add mol xyz <<EOF
+3
+Water
+O  0.000  0.000  0.000
+H  0.757  0.586  0.000
+H -0.757  0.586  0.000
+EOF
+rebond
+
+list mols
+time 1
+
+# Create second molecule
+new "Methane"
+add mol xyz <<EOF
+5
+Methane
+C  0.000  0.000  0.000
+H  0.630  0.630  0.630
+H -0.630 -0.630  0.630
+H -0.630  0.630 -0.630
+H  0.630 -0.630 -0.630
+EOF
+rebond 
+list mols
+time 1
+
+# Switch between molecules
+sw 0
+time 1
+
+list mols
+time 1
+
+sw 2
+time 1
+list mols
+
+# Rename molecule
+rename "CH4 Molecule"
+time 1
+
+list mols
+time 1
+
+# Create and remove molecule
+new "Temp"
+add atom H 0 0 0
+add atom H 0 0.7 0
+time 1
+rebond 
+
+list mols
+time 1
+
+del mol 1
+time 1
+
+del mol "CH4 Molecule"
+del mol "Temp"
+
+list mols
+
+time 3
+del atom :

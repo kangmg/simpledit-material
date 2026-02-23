@@ -1,0 +1,68 @@
+# Test Comprehensive Geometry Adjustments
+cls 
+
+add mol xyz <<EOF
+21
+2244
+O          1.13512        0.39863        0.78775
+O         -0.79338       -2.87017       -0.74165
+O          0.69762       -2.33967        0.87705
+O          1.68312        0.65513       -1.47355
+C         -0.18388        0.45343        0.44885
+C         -0.89088       -0.70687        0.13295
+C         -0.82698        1.69103        0.42185
+C         -2.24078       -0.62947       -0.20985
+C         -2.17688        1.76843        0.07915
+C         -2.88368        0.60823       -0.23675
+C         -0.23908       -2.00897        0.15625
+C          2.01122        0.51613       -0.30275
+C          3.43232        0.44423        0.17205
+H         -0.28328        2.59913        0.66785
+H         -2.82288       -1.51587       -0.44785
+H         -2.67788        2.73183        0.05915
+H         -3.93558        0.66843       -0.50045
+H          3.63082        1.26303        0.86785
+H          4.10632        0.54153       -0.68385
+H          3.61232       -0.52127        0.65115
+H         -0.35368       -3.74697       -0.72515
+EOF
+rebond
+
+# distance
+set dist 5 10 2 \ time 0.5
+set dist 5 10 3 \ time 0.5
+set dist 5 10 4 \ time 0.5
+set dist 5 10 5 \ time 1
+
+# angle 
+## test angle : 2-10-5
+set angle 2 10 5 140 \ time 0.2
+set angle 2 10 5 145 \ time 0.2
+set angle 2 10 5 150 \ time 0.2
+set angle 2 10 5 155 \ time 0.2
+set angle 2 10 5 160 \ time 0.2
+
+## test angle : 1-10-5
+set angle 1 10 5 160 \ time 0.2
+set angle 1 10 5 155 \ time 0.2
+set angle 1 10 5 150 \ time 0.2
+set angle 1 10 5 145 \ time 0.2
+set angle 1 10 5 140 \ time 0.2
+
+# dihedral
+## test dihedral : 6 4 0 11
+set dihedral 6 4 0 11 -100 \ time 0.5
+set dihedral 6 4 0 11 -105 \ time 0.5
+set dihedral 6 4 0 11 -110 \ time 0.5
+set dihedral 6 4 0 11 -115 \ time 0.5
+set dihedral 6 4 0 11 -120 \ time 0.5
+
+## test dihedral : 4 0 11 3
+set dihedral 4 0 11 3 10 \ time 0.5
+set dihedral 4 0 11 3 15 \ time 0.5
+set dihedral 4 0 11 3 20 \ time 0.5
+set dihedral 4 0 11 3 25 \ time 0.5
+set dihedral 4 0 11 3 30 \ time 0.5
+
+time 2.5
+del atoms :

@@ -1,0 +1,22 @@
+# Basic Commands Test
+# Tests: help, list, clear
+cls 
+
+add atom C 0 0 0
+add atom C 1.5 0 0
+
+help
+time 1
+
+cls
+time 1
+
+help list 
+time 1
+
+list atom
+time 1
+
+help cls
+
+del atom :

@@ -1,0 +1,28 @@
+# Test Undo/Redo
+cls
+
+add atom C 0 0 0
+add atom O 1.5 0 0
+rebond 
+lbl -s
+
+time 1
+undo
+# Should have only C
+
+time 1
+redo
+# Should have C and O
+
+time 1
+undo
+
+time 1
+undo
+# Should be empty (or initial state)
+
+time 1
+redo
+# Should have C
+
+del atoms : 

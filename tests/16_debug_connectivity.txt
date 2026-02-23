@@ -1,0 +1,13 @@
+# Test connectivity
+add mol xyz <<END
+4
+Test
+C 0 0 0
+C 1.5 0 0
+H 2.6 0 0
+H -1.1 0 0
+END
+
+rebond
+select :
+debug_conn

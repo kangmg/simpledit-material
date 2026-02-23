@@ -1,0 +1,62 @@
+# Visual Scaling Test
+# Tests: set scale atom, set scale bond
+cls 
+
+add atom H 0 0 0
+set scale atom 1.5 \ time 0.5
+set scale atom 2.0 \ time 0.5
+set scale atom 3.0 \ time 0.5
+set scale atom 4.0 \ time 0.5
+set scale atom 1.0 \ time 0.5
+
+add atom H 0 0.7 0
+rebond 
+set scale bond 1.2 \ time 0.5
+set scale bond 1.4 \ time 0.5
+set scale bond 1.6 \ time 0.5
+set scale bond 1.8 \ time 0.5
+set scale bond 2.0 \ time 0.5
+set scale bond 1.0 \ time 0.5
+
+del atoms : \ time 1
+
+# Load molecule (1,2-Difluoroethane)
+add mol xyz <<EOF
+8
+
+F        1.34840       -0.55490        0.14980
+F       -1.34850       -0.55480       -0.14980
+C        0.69620        0.55490       -0.29020
+C       -0.69610        0.55490        0.29020
+H        0.66790        0.50740       -1.38190
+H        1.26370        1.43390        0.02570
+H       -1.26350        1.43400       -0.02550
+H       -0.66780        0.50730        1.38190
+EOF
+
+rebond
+center
+time 1
+
+# 1. Increase Atom Scale
+set scale atom 1.5
+time 1
+
+# 2. Increase Bond Scale
+set scale bond 2.0
+time 1
+
+# 3. Decrease Atom Scale
+set scale atom 0.5
+time 1
+
+# 4. Decrease Bond Scale
+set scale bond 0.5
+time 1
+
+# 5. Reset Scales
+set scale atom 1.0
+set scale bond 1.0
+time 3
+
+del atoms :
