@@ -34,6 +34,7 @@ export class UIManager {
         this.bindJSMEButton();
         this.bindBondThresholdSlider();
         this.bindConsoleButton();
+        this.bindSupercellButton();
         console.log('UIManager: Toolbar events bound');
     }
 
@@ -451,6 +452,109 @@ export class UIManager {
             };
         }
     }
+
+    /**
+     * Bind supercell button
+     */
+    bindSupercellButton() {
+        const btnSupercell = document.getElementById('btn-supercell');
+        const btnApply = document.getElementById('btn-supercell-apply');
+        const btnCancel = document.getElementById('btn-supercell-cancel');
+        const btnSimple = document.getElementById('btn-supercell-simple');
+        const controls = document.getElementById('supercell-controls');
+
+        if (btnSupercell) {
+            btnSupercell.onclick = () => {
+                if (controls) {
+                    controls.style.display = controls.style.display === 'none' ? 'block' : 'none';
+                }
+            };
+        }
+
+        if (btnCancel) {
+            btnCancel.onclick = () => {
+                if (controls) controls.style.display = 'none';
+            };
+        }
+
+        if (btnSimple) {
+            btnSimple.onclick = () => {
+                // Set simple 2x2x2 matrix
+                document.getElementById('sc-s11').value = '2';
+                document.getElementById('sc-s12').value = '0';
+                document.getElementById('sc-s13').value = '0';
+                document.getElementById('sc-s21').value = '0';
+                document.getElementById('sc-s22').value = '2';
+                document.getElementById('sc-s23').value = '0';
+                document.getElementById('sc-s31').value = '0';
+                document.getElementById('sc-s32').value = '0';
+                document.getElementById('sc-s33').value = '2';
+            };
+        }
+
+        if (btnApply) {
+            btnApply.onclick = () => {
+                const mol = this.editor.molecule;
+                if (!mol || !mol.isCrystal) {
+                    this.showError('No crystal loaded. Import a CIF or POSCAR file first.');
+                    return;
+                }
+
+                // Read matrix values
+                const s11 = parseInt(document.getElementById('sc-s11').value) || 0;
+                const s12 = parseInt(document.getElementById('sc-s12').value) || 0;
+                const s13 = parseInt(document.getElementById('sc-s13').value) || 0;
+                const s21 = parseInt(document.getElementById('sc-s21').value) || 0;
+                const s22 = parseInt(document.getElementById('sc-s22').value) || 0;
+                const s23 = parseInt(document.getElementById('sc-s23').value) || 0;
+                const s31 = parseInt(document.getElementById('sc-s31').value) || 0;
+                const s32 = parseInt(document.getElementById('sc-s32').value) || 0;
+                const s33 = parseInt(document.getElementById('sc-s33').value) || 0;
+
+                const S = [
+                    [s11, s12, s13],
+                    [s21, s22, s23],
+                    [s31, s32, s33]
+               ];
+
+                // Validate matrix
+                if (S.some(row => row.some(val => isNaN(val) || val < 0))) {
+                    this.showError('Invalid matrix values. All values must be non-negative integers.');
+                    return;
+                }
+
+                // Check if any diagonal element is zero
+                if (s11 === 0 || s22 === 0 || s33 === 0) {
+                    this.showError('Diagonal elements (s11, s22, s33) must be at least 1.');
+                    return;
+                }
+
+                try {
+                    const sc = mol.generateSupercellMatrix(S);
+                    this.editor.moleculeManager.loadCrystal(sc);
+                    this.editor.moleculeManager.autoBondPBC();
+                    this.editor.rebuildScene();
+                    this.editor.saveState();
+
+                    // Calculate determinant for display
+                    const det = s11*(s22*s33 - s23*s32) - s12*(s21*s33 - s23*s31) + s13*(s21*s32 - s22*s31);
+                    this.showSuccess(`Generated ${det}x supercell: ${sc.atoms.length} atoms`);
+
+                    // Hide controls
+                    if (controls) controls.style.display = 'none';
+                } catch (e) {
+                    this.showError('Failed to generate supercell: ' + e.message);
+                }
+            };
+        }
+    }
+<task_progress>
+- [x] 기존 UI 구조 분석
+- [x] supercell UI 컴포넌트 설계
+- [x] UI 구현
+- [x] 스타일 맞추기
+- [ ] 기능 통합 및 테스트
+</task_progress>
 
     /**
      * Bind coordinate editor button

@@ -1,5 +1,13 @@
 import * as THREE from 'three';
 
+/**
+ * Represents an atom in the molecular structure
+ * @property {string} element - Chemical element symbol
+ * @property {THREE.Vector3} position - 3D coordinates
+ * @property {boolean} selected - Selection state
+ * @property {THREE.Mesh} mesh - Visual mesh representation
+ * @property {Array} bonds - Array of bonds connected to this atom
+ */
 export class Atom {
     constructor(element, position, id) {
         this.element = element;
@@ -12,6 +20,13 @@ export class Atom {
     }
 }
 
+/**
+ * Represents a chemical bond between two atoms
+ * @property {Atom} atom1 - First atom in the bond
+ * @property {Atom} atom2 - Second atom in the bond
+ * @property {number} order - Bond order (1=single, 2=double, 3=triple)
+ * @property {THREE.Mesh} mesh - Visual mesh representation
+ */
 export class Bond {
     constructor(atom1, atom2, order = 1) {
         this.atom1 = atom1;
@@ -22,6 +37,12 @@ export class Bond {
     }
 }
 
+/**
+ * Represents a molecular structure containing atoms and bonds
+ * @property {string} name - Molecule name
+ * @property {Array<Atom>} atoms - Array of atoms in the molecule
+ * @property {Array<Bond>} bonds - Array of bonds in the molecule
+ */
 export class Molecule {
     constructor(name = 'Molecule') {
         this.name = name;
