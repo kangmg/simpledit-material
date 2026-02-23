@@ -1031,24 +1031,45 @@ export class CommandRegistry {
             return { success: `Cell set: a=${a} b=${b} c=${c} α=${alpha} β=${beta} γ=${gamma}` };
         });
 
-        // supercell: generate a supercell
-        this.register('supercell', ['sc'], 'supercell <na> <nb> <nc> - Generate supercell', { isDestructive: true }, (args) => {
-            if (args.length !== 3) return { error: 'Usage: supercell <na> <nb> <nc>  (e.g. supercell 2 2 2)' };
-            const na = parseInt(args[0]);
-            const nb = parseInt(args[1]);
-            const nc = parseInt(args[2]);
-            if ([na, nb, nc].some(v => isNaN(v) || v < 1)) return { error: 'Repeat counts must be positive integers' };
+        // supercell: generate a supercell (diagonal or full 3×3 matrix)
+        this.register('supercell', ['sc'],
+            'supercell <na> <nb> <nc>  |  supercell <s11..s33 row-major> - Generate supercell',
+            { isDestructive: true }, (args) => {
+            if (args.length !== 3 && args.length !== 9) {
+                return { error: 'Usage:\n  supercell <na> <nb> <nc>  (e.g. supercell 2 2 2)\n  supercell <s11> <s12> <s13> <s21> <s22> <s23> <s31> <s32> <s33>  (3×3 matrix, row-major)' };
+            }
 
             const mol = this.editor.molecule;
             if (!mol || !mol.isCrystal) return { error: 'No crystal loaded' };
 
+            let S;
+            if (args.length === 3) {
+                const na = parseInt(args[0]);
+                const nb = parseInt(args[1]);
+                const nc = parseInt(args[2]);
+                if ([na, nb, nc].some(v => isNaN(v) || v < 1)) return { error: 'Repeat counts must be positive integers' };
+                S = [[na, 0, 0], [0, nb, 0], [0, 0, nc]];
+            } else {
+                const vals = args.map(v => parseInt(v));
+                if (vals.some(isNaN)) return { error: 'Matrix elements must be integers' };
+                S = [
+                    [vals[0], vals[1], vals[2]],
+                    [vals[3], vals[4], vals[5]],
+                    [vals[6], vals[7], vals[8]]
+                ];
+            }
+
             try {
-                const sc = mol.generateSupercell(na, nb, nc);
+                const sc = mol.generateSupercellMatrix(S);
                 this.editor.moleculeManager.loadCrystal(sc);
                 this.editor.moleculeManager.autoBondPBC();
                 this.editor.rebuildScene();
                 this.editor.saveState();
-                return { success: `Generated ${na}×${nb}×${nc} supercell: ${sc.atoms.length} atoms` };
+                if (args.length === 3) {
+                    return { success: `Generated ${S[0][0]}×${S[1][1]}×${S[2][2]} supercell: ${sc.atoms.length} atoms` };
+                } else {
+                    return { success: `Generated matrix supercell (det=${S[0][0]*(S[1][1]*S[2][2]-S[1][2]*S[2][1])-S[0][1]*(S[1][0]*S[2][2]-S[1][2]*S[2][0])+S[0][2]*(S[1][0]*S[2][1]-S[1][1]*S[2][0])}): ${sc.atoms.length} atoms` };
+                }
             } catch (e) {
                 return { error: e.message };
             }
