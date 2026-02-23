@@ -15,11 +15,11 @@ Avogadro2 and the [rowan](https://labs.rowansci.com/editor) are excellent altern
 
 ## Try it Online
 
-**Live Demo**: [https://kangmg.github.io/simpledit/](https://kangmg.github.io/simpledit/)
+**Live Demo**: [https://kangmg.github.io/simpledit/](https://kangmg.github.io/simpledit-material/)
 
 **Documentation**:
-- [Documentation](https://kangmg.github.io/simpledit/tutorial/) 
-- [JS API Documentation](https://kangmg.github.io/simpledit/api/)
+- [Documentation](https://kangmg.github.io/simpledit-material/tutorial/) 
+- [JS API Documentation](https://kangmg.github.io/simpledit-material/api/)
 - [Console CMD Guide](./docs/usage.md)
 
 
