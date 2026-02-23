@@ -6,7 +6,7 @@
 
 ---
 
-# $${\Large \text{simpl}}{\Large \color{blue}\text{edit}}$$
+# $${\Large \text{simpl}}{\Large \color{blue}\text{edit}\color{white}\text{-material}}$$
 
 This project is a simple JavaScript-based molecular editor. It was created because only a few JS-based molecular editors are currently available. The current version is a pre-alpha prototype with a very minimal user interface.
 
