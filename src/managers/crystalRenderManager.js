@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { ConvexGeometry } from 'three/examples/jsm/geometries/ConvexGeometry.js';
 
 /**
  * Manages crystal-specific 3D rendering:
@@ -25,6 +26,12 @@ export class CrystalRenderManager {
         this._aColor    = 0xcc0000;    // red  for a-axis highlight
         this._bColor    = 0x007700;    // green for b-axis highlight
         this._cColor    = 0x0000cc;    // blue  for c-axis highlight
+
+        /** @type {THREE.Mesh[]} Polyhedral meshes */
+        this.polyhedralMeshes = [];
+        this.showPolyhedra = false;
+        /** Elements that are polyhedra centres (empty = all with CN ≥ 3) */
+        this.polyhedralElements = [];
     }
 
     // ─── Unit cell wireframe ──────────────────────────────────────────────────
@@ -159,6 +166,97 @@ export class CrystalRenderManager {
         }
     }
 
+    // ─── Coordination polyhedra ───────────────────────────────────────────────
+
+    /**
+     * Render semi-transparent coordination polyhedra.
+     * Each atom whose element is in `polyhedralElements` (or all atoms with CN ≥ 3
+     * if the list is empty) is used as a polyhedron centre; its bonded neighbours
+     * form the vertices.
+     *
+     * For crystal structures, neighbour positions are obtained via the minimum-image
+     * convention so that face-sharing polyhedra across PBC look correct.
+     *
+     * @param {import('../crystal.js').Crystal|import('../molecule.js').Molecule} mol
+     * @param {import('./renderManager.js').RenderManager} renderManager
+     */
+    drawPolyhedra(mol, renderManager) {
+        this.clearPolyhedra();
+        if (!this.showPolyhedra || !mol) return;
+
+        const filterEls = this.polyhedralElements.length > 0
+            ? new Set(this.polyhedralElements)
+            : null;
+
+        mol.atoms.forEach(atom => {
+            if (filterEls && !filterEls.has(atom.element)) return;
+            if (atom.bonds.length < 3) return; // need at least 4 points for a solid
+
+            // Collect neighbour positions (using minimum-image for PBC)
+            const pts = [];
+            atom.bonds.forEach(bond => {
+                const nb = bond.atom1 === atom ? bond.atom2 : bond.atom1;
+                let pos = nb.position.clone();
+                if (mol.isCrystal && mol.lattice) {
+                    const disp = pos.clone().sub(atom.position);
+                    const miDisp = mol.lattice.minimumImage(disp.x, disp.y, disp.z);
+                    pos = atom.position.clone().add(miDisp);
+                }
+                pts.push(pos);
+            });
+
+            if (pts.length < 3) return;
+
+            // Deduplicate coincident points (ConvexGeometry throws on them)
+            const uniquePts = [pts[0]];
+            for (let i = 1; i < pts.length; i++) {
+                if (uniquePts.every(p => p.distanceTo(pts[i]) > 0.05)) {
+                    uniquePts.push(pts[i]);
+                }
+            }
+            if (uniquePts.length < 3) return;
+
+            try {
+                const geo = new ConvexGeometry(uniquePts);
+                const color = renderManager.getElementColor(atom.element);
+                const mat = new THREE.MeshPhongMaterial({
+                    color,
+                    transparent: true,
+                    opacity: 0.32,
+                    side: THREE.DoubleSide,
+                    depthWrite: false,
+                    shininess: 40,
+                });
+                const mesh = new THREE.Mesh(geo, mat);
+                mesh.userData = { type: 'polyhedron' };
+                this.scene.add(mesh);
+                this.polyhedralMeshes.push(mesh);
+            } catch (e) {
+                // Degenerate point set (all coplanar, etc.) – silently skip
+            }
+        });
+    }
+
+    clearPolyhedra() {
+        this.polyhedralMeshes.forEach(m => {
+            if (m.geometry) m.geometry.dispose();
+            if (m.material) m.material.dispose();
+            this.scene.remove(m);
+        });
+        this.polyhedralMeshes = [];
+    }
+
+    /**
+     * Enable / disable polyhedral rendering.
+     * @param {boolean} visible
+     * @param {string[]} [elements] Optional element filter (e.g. ['Fe', 'Ti'])
+     */
+    setPolyhedra(visible, elements) {
+        this.showPolyhedra = visible;
+        if (elements !== undefined) this.polyhedralElements = elements;
+        if (!visible) this.clearPolyhedra();
+    }
+
     // ─── Full refresh ─────────────────────────────────────────────────────────
 
     /**
@@ -170,11 +268,15 @@ export class CrystalRenderManager {
         if (!mol || !mol.isCrystal) {
             this.clearUnitCell();
             this.clearGhostAtoms();
+            this.clearPolyhedra();
             return;
         }
         this.drawUnitCell(mol);
         if (this.showGhosts) {
             this.drawGhostAtoms(mol, this.editor.renderManager);
+        }
+        if (this.showPolyhedra) {
+            this.drawPolyhedra(mol, this.editor.renderManager);
         }
     }
 }

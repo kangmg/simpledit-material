@@ -3,6 +3,7 @@ import { ELEMENTS } from './constants.js';
 import { GeometryEngine } from './geometryEngine.js';
 import { rdkitManager } from './managers/rdkitManager.js';
 import { LatticeParams } from './crystal.js';
+import { SlabGenerator } from './managers/slabGenerator.js';
 
 export class CommandRegistry {
     constructor(editor) {
@@ -687,9 +688,11 @@ export class CommandRegistry {
             return mvCommand.execute(['mol', ...args]);
         });
 
-        // Select command (Preserved)
-        this.register('select', ['sel'], 'select <indices|frag index> - Select atoms or fragment', (args) => {
-            if (args.length === 0) return { error: 'Usage: select <indices> or select frag <index>' };
+        // Select command
+        this.register('select', ['sel'],
+            'select <indices|frag N|element El...|layer N|layer top/bottom> - Select atoms',
+            (args) => {
+            if (args.length === 0) return { error: 'Usage: select <indices|frag N|element El...|layer N>' };
 
             // Select all atoms
             if (args[0] === ':') {
@@ -701,6 +704,91 @@ export class CommandRegistry {
                 });
                 this.editor.updateSelectionInfo();
                 return { success: 'Selected all' };
+            }
+
+            // ── select element <El> [El2 …] ──────────────────────────────────
+            if (['element', 'elem', 'el'].includes(args[0].toLowerCase())) {
+                if (args.length < 2) return { error: 'Usage: select element <El> [El2 ...]' };
+                const elements = args.slice(1).map(
+                    e => e.charAt(0).toUpperCase() + e.slice(1).toLowerCase()
+                );
+                this.editor.clearSelection();
+                this.editor.molecule.atoms.forEach(atom => {
+                    if (!elements.includes(atom.element)) return;
+                    atom.selected = true;
+                    this.editor.selectionOrder.push(atom);
+                    this.editor.updateAtomVisuals(atom);
+                });
+                this.editor.updateSelectionInfo();
+                const n = this.editor.molecule.atoms.filter(a => a.selected).length;
+                return { success: `Selected ${n} atom(s) of [${elements.join(', ')}]` };
+            }
+
+            // ── select layer <N|range|top|bottom> ────────────────────────────
+            if (args[0].toLowerCase() === 'layer') {
+                if (args.length < 2) return { error: 'Usage: select layer <N|N:M|top|bottom>' };
+                const mol = this.editor.molecule;
+                const EPS_L = 0.05; // Å tolerance for same layer
+
+                // Build sorted layer list from z-coordinates (or fractional z for crystals)
+                const getZ = (atom) => {
+                    if (mol.isCrystal && mol.lattice) {
+                        const frac = mol.getFrac ? mol.getFrac(atom) : null;
+                        if (frac) return frac.z;
+                        const f = mol.lattice.cartToFrac(
+                            atom.position.x, atom.position.y, atom.position.z
+                        );
+                        return f.z;
+                    }
+                    return atom.position.z;
+                };
+
+                const atomsSorted = [...mol.atoms].sort((a, b) => getZ(a) - getZ(b));
+                // Group into layers
+                const layers = [];
+                for (const atom of atomsSorted) {
+                    const z = getZ(atom);
+                    if (layers.length === 0 || z - layers[layers.length - 1].z > EPS_L) {
+                        layers.push({ z, atoms: [atom] });
+                    } else {
+                        layers[layers.length - 1].atoms.push(atom);
+                    }
+                }
+
+                // Parse layer spec
+                const spec = args[1].toLowerCase();
+                let layerIndices = [];
+                if (spec === 'top') {
+                    layerIndices = [layers.length - 1];
+                } else if (spec === 'bottom') {
+                    layerIndices = [0];
+                } else if (spec.includes(':')) {
+                    const parts = spec.split(':');
+                    const s = parts[0] === '' ? 0 : parseInt(parts[0]);
+                    const e = parts[1] === '' ? layers.length - 1 : parseInt(parts[1]);
+                    if (isNaN(s) || isNaN(e)) return { error: `Invalid layer range: ${spec}` };
+                    for (let i = s; i <= e; i++) layerIndices.push(i);
+                } else {
+                    const idx = parseInt(spec);
+                    if (isNaN(idx)) return { error: `Invalid layer index: ${spec}` };
+                    layerIndices = [idx];
+                }
+
+                this.editor.clearSelection();
+                let selCount = 0;
+                for (const li of layerIndices) {
+                    if (li < 0 || li >= layers.length) continue;
+                    layers[li].atoms.forEach(atom => {
+                        atom.selected = true;
+                        this.editor.selectionOrder.push(atom);
+                        this.editor.updateAtomVisuals(atom);
+                        selCount++;
+                    });
+                }
+                this.editor.updateSelectionInfo();
+                return {
+                    success: `Selected layer(s) [${layerIndices.join(',')}] of ${layers.length} total: ${selCount} atom(s)`
+                };
             }
 
             // Select fragment
@@ -1141,6 +1229,79 @@ export class CommandRegistry {
             crm.setUnitCellVisible(visible);
             if (visible) crm.drawUnitCell(this.editor.molecule);
             return { success: `Unit cell ${visible ? 'shown' : 'hidden'}` };
+        });
+
+        // slab: generate a surface slab from a crystal
+        this.register('slab', [],
+            'slab <h> <k> <l> [layers=4] [vacuum=10] [-no-center] - Generate surface slab',
+            { isDestructive: true }, (args) => {
+            if (args.length < 3) {
+                return { error: 'Usage: slab <h> <k> <l> [layers] [vacuum] [-no-center]\n  e.g.: slab 0 0 1 4 10' };
+            }
+            const mol = this.editor.molecule;
+            if (!mol || !mol.isCrystal) return { error: 'No crystal loaded' };
+
+            const h = parseInt(args[0]);
+            const k = parseInt(args[1]);
+            const l = parseInt(args[2]);
+            if ([h, k, l].some(isNaN)) return { error: 'Miller indices must be integers' };
+            if (h === 0 && k === 0 && l === 0) return { error: 'Miller indices cannot all be zero' };
+
+            const layers  = args.length > 3 ? parseInt(args[3])    : 4;
+            const vacuum  = args.length > 4 ? parseFloat(args[4])  : 10.0;
+            const centered = !args.includes('-no-center');
+
+            if (isNaN(layers) || layers < 1) return { error: 'layers must be a positive integer' };
+            if (isNaN(vacuum) || vacuum < 0) return { error: 'vacuum must be a non-negative number' };
+
+            try {
+                const slab = SlabGenerator.generate(mol, h, k, l, layers, vacuum, centered);
+                this.editor.moleculeManager.loadCrystal(slab);
+                this.editor.moleculeManager.autoBondPBC();
+                this.editor.rebuildScene();
+                this.editor.saveState();
+                const info = slab._slabInfo;
+                return {
+                    success: [
+                        `Generated (${h}${k}${l}) slab: ${slab.atoms.length} atoms`,
+                        `  d-spacing: ${info.dSpacing.toFixed(3)} Å`,
+                        `  Atomic layers: ${layers},  Vacuum: ${vacuum} Å`,
+                        `  Cell: a=${slab.lattice.a.toFixed(3)} b=${slab.lattice.b.toFixed(3)} c=${slab.lattice.c.toFixed(3)} Å`,
+                    ].join('\n')
+                };
+            } catch (e) {
+                return { error: e.message };
+            }
+        });
+
+        // poly: toggle coordination polyhedra rendering
+        this.register('poly', ['polyhedra'],
+            'poly [on|off] [element...] - Toggle coordination polyhedra', (args) => {
+            const crm = this.editor.crystalRenderManager;
+            if (!crm) return { error: 'Crystal render manager not available' };
+
+            const mol = this.editor.molecule;
+
+            // Parse on/off toggle and optional element list
+            let visible = !crm.showPolyhedra;
+            const elements = [];
+            for (const arg of args) {
+                const a = arg.toLowerCase();
+                if (a === 'on'  || a === '1' || a === 'true')  { visible = true;  continue; }
+                if (a === 'off' || a === '0' || a === 'false') { visible = false; continue; }
+                // Assume it's an element symbol
+                elements.push(arg.charAt(0).toUpperCase() + arg.slice(1).toLowerCase());
+            }
+
+            crm.setPolyhedra(visible, elements.length > 0 ? elements : undefined);
+            if (visible && mol) {
+                crm.drawPolyhedra(mol, this.editor.renderManager);
+            }
+
+            const elStr = crm.polyhedralElements.length > 0
+                ? ` [${crm.polyhedralElements.join(', ')}]`
+                : ' (all with CN≥3)';
+            return { success: `Polyhedra ${visible ? 'on' : 'off'}${visible ? elStr : ''}` };
         });
 
         // Show Command (Unified 2D/3D)
