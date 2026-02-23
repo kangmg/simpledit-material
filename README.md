@@ -15,7 +15,7 @@ Avogadro2 and the [rowan](https://labs.rowansci.com/editor) are excellent altern
 
 ## Try it Online
 
-**Live Demo**: [https://kangmg.github.io/simpledit/](https://kangmg.github.io/simpledit-material/)
+**Live Demo**: [https://kangmg.github.io/simpledit-material/](https://kangmg.github.io/simpledit-material/)
 
 **Documentation**:
 - [Documentation](https://kangmg.github.io/simpledit-material/tutorial/) 
