@@ -1,4 +1,5 @@
 import { Molecule } from './molecule.js';
+import { Crystal } from './crystal.js';
 import { GeometryEngine } from './geometryEngine.js';
 import * as THREE from 'three';
 import { ELEMENTS, DEFAULT_ELEMENT } from './constants.js';
@@ -512,5 +513,79 @@ export class MoleculeManager {
             console.error('optimizeGeometry failed:', e);
             return { error: e.message };
         }
+    }
+
+    // ─── Crystal-specific methods ─────────────────────────────────────────────
+
+    /**
+     * Load a Crystal object as the active slot, replacing the current structure.
+     * Clears the existing molecule, assigns the Crystal, rebuilds the scene,
+     * and triggers unit-cell rendering via CrystalRenderManager.
+     * @param {Crystal} crystal
+     */
+    loadCrystal(crystal) {
+        const activeMol = this.getActive();
+        if (!activeMol) return { error: 'No active slot' };
+
+        // Replace the molecule object in the active entry
+        activeMol.molecule = crystal;
+        activeMol.name = crystal.name;
+        activeMol.history = [];
+        activeMol.historyIndex = -1;
+
+        // Rebuild editor state
+        this.editor.history = [];
+        this.editor.historyIndex = -1;
+        this.editor.rebuildScene();
+        this.editor.saveState();
+        this.updateUI();
+
+        return { success: `Loaded crystal structure: ${crystal.name} (${crystal.atoms.length} atoms)` };
+    }
+
+    /**
+     * Auto-bond with periodic boundary conditions (PBC) for crystal structures.
+     * Uses the minimum-image convention so bonds across cell boundaries are found.
+     * Falls back to the standard autoBond for non-crystal molecules.
+     * @param {number} [thresholdFactor=1.1]
+     * @returns {number} Number of bonds added
+     */
+    autoBondPBC(thresholdFactor = 1.1) {
+        const activeMol = this.getActive();
+        if (!activeMol) return 0;
+
+        const mol = activeMol.molecule;
+
+        // For regular molecules, delegate to the standard algorithm
+        if (!mol.isCrystal || !mol.lattice) {
+            return this.autoBond(thresholdFactor);
+        }
+
+        const atoms = mol.atoms;
+        let bondsAdded = 0;
+
+        for (let i = 0; i < atoms.length; i++) {
+            for (let j = i + 1; j < atoms.length; j++) {
+                const r1 = this.getElementRadius(atoms[i].element);
+                const r2 = this.getElementRadius(atoms[j].element);
+                const threshold = (r1 + r2) * thresholdFactor;
+
+                // Minimum-image displacement
+                const dx = atoms[j].position.x - atoms[i].position.x;
+                const dy = atoms[j].position.y - atoms[i].position.y;
+                const dz = atoms[j].position.z - atoms[i].position.z;
+                const micVec = mol.lattice.minimumImage(dx, dy, dz);
+                const dist = micVec.length();
+
+                if (dist < threshold) {
+                    if (!mol.getBond(atoms[i], atoms[j])) {
+                        mol.addBond(atoms[i], atoms[j], 1);
+                        bondsAdded++;
+                    }
+                }
+            }
+        }
+
+        return bondsAdded;
     }
 }

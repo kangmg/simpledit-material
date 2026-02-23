@@ -150,14 +150,25 @@ export class RenderManager {
     rebuildScene() {
         if (!this.editor.molecule) return;
 
-        // Clear existing objects
+        // Clear existing objects (atoms, bonds, unit cell, ghost atoms)
         const toRemove = [];
         this.renderer.scene.traverse(obj => {
-            if (obj.userData && (obj.userData.type === 'atom' || obj.userData.type === 'bond')) {
+            if (obj.userData && (
+                obj.userData.type === 'atom' ||
+                obj.userData.type === 'bond' ||
+                obj.userData.type === 'unitCell' ||
+                obj.userData.type === 'ghostAtom'
+            )) {
                 toRemove.push(obj);
             }
         });
         toRemove.forEach(obj => this.renderer.scene.remove(obj));
+
+        // Clear crystal render manager caches too
+        if (this.editor.crystalRenderManager) {
+            this.editor.crystalRenderManager.unitCellMesh = null;
+            this.editor.crystalRenderManager.ghostMeshes = [];
+        }
 
         // Clear all existing labels from DOM
         if (this.editor.labelContainer) {
@@ -184,6 +195,11 @@ export class RenderManager {
 
         // Update labels
         this.editor.uiManager.updateAllLabels();
+
+        // Draw crystal overlays (unit cell wireframe, ghost atoms)
+        if (this.editor.crystalRenderManager) {
+            this.editor.crystalRenderManager.refresh();
+        }
     }
 
     /**
