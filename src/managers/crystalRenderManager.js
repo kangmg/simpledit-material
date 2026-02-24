@@ -46,14 +46,27 @@ export class CrystalRenderManager {
         if (!crystal || !crystal.lattice || !this.showUnitCell) return;
 
         const { a, b, c } = crystal.lattice.toLatticeVectors();
-        const O   = new THREE.Vector3();
-        const A   = a.clone();
-        const B   = b.clone();
-        const C   = c.clone();
-        const AB  = A.clone().add(B);
-        const AC  = A.clone().add(C);
-        const BC  = B.clone().add(C);
-        const ABC = A.clone().add(B).add(C);
+
+        // Back-compute the Cartesian position of the fractional origin (0,0,0).
+        // When operations like 'center' shift atom.position without updating
+        // fracCoords, the lattice box must be offset by the same amount.
+        const O = new THREE.Vector3();
+        for (const atom of crystal.atoms) {
+            const frac = crystal.getFrac ? crystal.getFrac(atom) : null;
+            if (frac) {
+                const expected = crystal.lattice.fracToCart(frac.x, frac.y, frac.z);
+                O.copy(atom.position).sub(expected);
+                break;
+            }
+        }
+
+        const A   = O.clone().add(a);
+        const B   = O.clone().add(b);
+        const C   = O.clone().add(c);
+        const AB  = O.clone().add(a).add(b);
+        const AC  = O.clone().add(a).add(c);
+        const BC  = O.clone().add(b).add(c);
+        const ABC = O.clone().add(a).add(b).add(c);
 
         // 12 edges of the parallelepiped
         // Axis edges coloured distinctly; face-diagonal edges in cell colour
