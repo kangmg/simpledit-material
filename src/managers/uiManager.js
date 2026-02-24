@@ -33,6 +33,8 @@ export class UIManager {
         this.bindCoordinateEditorButton();
         this.bindJSMEButton();
         this.bindBondThresholdSlider();
+        this.bindAtomScaleSlider();
+        this.bindBondsVisibleToggle();
         this.bindConsoleButton();
         this.bindSupercellButton();
         console.log('UIManager: Toolbar events bound');
@@ -577,6 +579,34 @@ export class UIManager {
         const btnJSME = document.getElementById('btn-edit-2d');
         if (btnJSME) {
             btnJSME.onclick = () => this.openJSME();
+        }
+    }
+
+    /**
+     * Bind atom size slider
+     */
+    bindAtomScaleSlider() {
+        const slider = document.getElementById('atom-scale');
+        const display = document.getElementById('val-atom-scale');
+
+        if (slider && display) {
+            slider.oninput = (e) => {
+                const scale = parseFloat(e.target.value);
+                display.textContent = scale.toFixed(1);
+                this.editor.renderManager.setAtomScale(scale);
+            };
+        }
+    }
+
+    /**
+     * Bind show/hide bonds toggle
+     */
+    bindBondsVisibleToggle() {
+        const chk = document.getElementById('chk-bonds-visible');
+        if (chk) {
+            chk.onchange = (e) => {
+                this.editor.renderManager.setBondsVisible(e.target.checked);
+            };
         }
     }
 
