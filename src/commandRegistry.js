@@ -1317,6 +1317,21 @@ export class CommandRegistry {
             return { success: `Polyhedra ${visible ? 'on' : 'off'}${visible ? elStr : ''}` };
         });
 
+        // bonds: toggle bond visibility
+        this.register('bonds', [], 'bonds [on|off] - Toggle bond visibility', (args) => {
+            const rm = this.editor.renderManager;
+            let visible = !rm.showBonds;
+            if (args.length > 0) {
+                const a = args[0].toLowerCase();
+                if (a === 'on'  || a === '1' || a === 'true')  visible = true;
+                if (a === 'off' || a === '0' || a === 'false') visible = false;
+            }
+            rm.setBondsVisible(visible);
+            const chk = document.getElementById('chk-bonds-visible');
+            if (chk) chk.checked = visible;
+            return { success: `Bonds ${visible ? 'shown' : 'hidden'}` };
+        });
+
         // Show Command (Unified 2D/3D)
         this.register('show', [], 'show <2d|3d> [options] - Show visualization', async (args) => {
             if (args.length === 0) return { error: 'Usage: show <2d|3d> [options]' };

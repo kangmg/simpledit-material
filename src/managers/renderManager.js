@@ -13,6 +13,7 @@ export class RenderManager {
         this.state = editor.state;
         this.atomScale = 1.0;
         this.bondScale = 1.0;
+        this.showBonds = true;
     }
 
     /**
@@ -138,6 +139,7 @@ export class RenderManager {
         this.editor.molecule.bonds.forEach(bond => {
             const mesh = this.createBondMesh(bond);
             if (mesh) {
+                mesh.visible = this.showBonds;
                 this.renderer.scene.add(mesh);
                 bond.mesh = mesh;
             }
@@ -287,5 +289,16 @@ export class RenderManager {
     setBondScale(scale) {
         this.bondScale = scale;
         this.updateBondVisuals();
+    }
+
+    /**
+     * Show or hide all bond meshes without removing them
+     * @param {boolean} visible
+     */
+    setBondsVisible(visible) {
+        this.showBonds = visible;
+        this.renderer.scene.children
+            .filter(obj => obj.userData && obj.userData.type === 'bond')
+            .forEach(obj => { obj.visible = visible; });
     }
 }
