@@ -27,8 +27,8 @@ Avogadro2 and the [rowan](https://labs.rowansci.com/editor) are excellent altern
 
 ```bash
 # Clone the repository
-git clone https://github.com/kangmg/simpledit.git
-cd simpledit
+git clone https://github.com/kangmg/simpledit-material.git
+cd simpledit-material
 
 # Install dependencies
 npm install
@@ -44,36 +44,4 @@ npm run build
 npm run docs
 ```
 
-## Features
 
-- **Interactive 3D Editor**: Click-and-drag interface for building molecules
-- **Selection Tools**: Rectangle and lasso selection modes
-- **Advanced Geometry Manipulation**: 
-  - Fragment-based geometry engine with rigid body mechanics
-  - Real-time bond length, angle, and dihedral adjustments
-  - Smart fragment detection for precise molecular control
-- **Full Console Integration**: 
-  - 30+ commands with aliases for efficient workflows
-  - Batch command execution with heredoc support
-  - Command history and auto-completion
-- **Multi-Molecule Management**: 
-  - Unlimited molecules with independent undo/redo history
-  - Smart copy/paste/merge with collision avoidance
-  - Per-molecule visual settings
-- **Intelligent Group Substitution**: 
-  - Vector-aligned fragment replacement
-  - Automatic dummy atom detection
-  - Preservation of molecular geometry
-- **Multiple Camera Modes**: Orbit and trackball controls with perspective/orthographic projection
-- **Comprehensive Testing**: 19 test suites covering all functionality
-
-
-## Future Directions
-
-- LLM integration  
-- rdkit-js integration for 2D/SMILES sync and broader file format support  
-- ASE integration for in-editor calculations with community packages/calculators
-- Additional molecule building features
-    - enhanced ligand substitution
-    - hybridization & steric number aware positioning
-    - multi-coordinate driving deformations
