@@ -3,7 +3,7 @@ import { copyFileSync, mkdirSync, cpSync } from 'fs';
 import { join } from 'path';
 
 export default defineConfig({
-  base: '/simpledit/',
+  base: '/simpledit-material/',
 
   build: {
     // Output directory
