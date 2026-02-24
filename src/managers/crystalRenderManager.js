@@ -36,6 +36,10 @@ export class CrystalRenderManager {
         /** @type {THREE.Sprite[]} Miller index labels */
         this.millerLabels = [];
         this.showMillerIndices = false;
+
+        /** @type {THREE.Mesh[]} Miller plane meshes */
+        this.millerPlanes = [];
+        this.activePlanes = []; // Array of {h, k, l} objects
     }
 
     // ─── Unit cell wireframe ──────────────────────────────────────────────────
@@ -124,8 +128,8 @@ export class CrystalRenderManager {
     // ─── Ghost (periodic image) atoms ────────────────────────────────────────
 
     /**
-     * Render semi-transparent ghost atoms in the first shell of neighbouring
-     * cells (±1 in each lattice direction) for the given crystal.
+     * Render ghost atoms and bonds based on PBC connectivity.
+     * Only draws atoms that are bonded to atoms in the home cell.
      * @param {import('../crystal.js').Crystal} crystal
      * @param {import('./renderManager.js').RenderManager} renderManager
      */
@@ -134,37 +138,71 @@ export class CrystalRenderManager {
         if (!crystal || !crystal.lattice || !this.showGhosts) return;
 
         const { a, b, c } = crystal.lattice.toLatticeVectors();
+        const drawnGhosts = new Set(); // Track drawn ghost atoms to avoid duplicates
 
-        for (let ia = -1; ia <= 1; ia++) {
-            for (let ib = -1; ib <= 1; ib++) {
-                for (let ic = -1; ic <= 1; ic++) {
-                    if (ia === 0 && ib === 0 && ic === 0) continue; // skip home cell
-                    const offset = new THREE.Vector3()
-                        .addScaledVector(a, ia)
-                        .addScaledVector(b, ib)
-                        .addScaledVector(c, ic);
-
-                    crystal.atoms.forEach(atom => {
-                        const ghostPos = atom.position.clone().add(offset);
-                        const color = renderManager.getElementColor(atom.element);
-                        const radius = renderManager.getElementRadius(atom.element) * 0.6;
-
-                        const geo = new THREE.SphereGeometry(radius, 8, 8);
-                        const mat = new THREE.MeshPhongMaterial({
-                            color,
-                            transparent: true,
-                            opacity: 0.25,
-                            shininess: 20
-                        });
-                        const mesh = new THREE.Mesh(geo, mat);
-                        mesh.position.copy(ghostPos);
-                        mesh.userData = { type: 'ghostAtom' };
-                        this.scene.add(mesh);
-                        this.ghostMeshes.push(mesh);
-                    });
+        // For each atom in home cell, check its bonds
+        crystal.atoms.forEach(homeAtom => {
+            homeAtom.bonds.forEach(bond => {
+                const otherAtom = bond.atom1 === homeAtom ? bond.atom2 : bond.atom1;
+                
+                // Check all neighboring cells for periodic images
+                for (let ia = -1; ia <= 1; ia++) {
+                    for (let ib = -1; ib <= 1; ib++) {
+                        for (let ic = -1; ic <= 1; ic++) {
+                            if (ia === 0 && ib === 0 && ic === 0) continue;
+                            
+                            const offset = new THREE.Vector3()
+                                .addScaledVector(a, ia)
+                                .addScaledVector(b, ib)
+                                .addScaledVector(c, ic);
+                            
+                            const ghostPos = otherAtom.position.clone().add(offset);
+                            const dist = homeAtom.position.distanceTo(ghostPos);
+                            
+                            // If this ghost position is within bonding distance
+                            if (dist < bond.atom1.position.distanceTo(bond.atom2.position) * 1.5) {
+                                const ghostKey = `${otherAtom.id}_${ia}_${ib}_${ic}`;
+                                
+                                if (!drawnGhosts.has(ghostKey)) {
+                                    // Draw ghost atom
+                                    const color = renderManager.getElementColor(otherAtom.element);
+                                    const radius = renderManager.getElementRadius(otherAtom.element) * 0.6;
+                                    
+                                    const geo = new THREE.SphereGeometry(radius, 8, 8);
+                                    const mat = new THREE.MeshPhongMaterial({
+                                        color,
+                                        transparent: true,
+                                        opacity: 0.3,
+                                        shininess: 20
+                                    });
+                                    const mesh = new THREE.Mesh(geo, mat);
+                                    mesh.position.copy(ghostPos);
+                                    mesh.userData = { type: 'ghostAtom', key: ghostKey };
+                                    this.scene.add(mesh);
+                                    this.ghostMeshes.push(mesh);
+                                    drawnGhosts.add(ghostKey);
+                                }
+                                
+                                // Draw bond between home atom and ghost
+                                const bondGeo = new THREE.BufferGeometry().setFromPoints([
+                                    homeAtom.position,
+                                    ghostPos
+                                ]);
+                                const bondMat = new THREE.LineBasicMaterial({
+                                    color: 0x666666,
+                                    transparent: true,
+                                    opacity: 0.3
+                                });
+                                const bondLine = new THREE.Line(bondGeo, bondMat);
+                                bondLine.userData = { type: 'ghostBond' };
+                                this.scene.add(bondLine);
+                                this.ghostMeshes.push(bondLine);
+                            }
+                        }
+                    }
                 }
-            }
-        }
+            });
+        });
     }
 
     clearGhostAtoms() {
@@ -351,6 +389,91 @@ export class CrystalRenderManager {
         if (!visible) this.clearMillerIndices();
     }
 
+    // ─── Miller Planes ────────────────────────────────────────────────────────
+
+    /**
+     * Draw Miller plane as semi-transparent mesh
+     * @param {import('../crystal.js').Crystal} crystal
+     * @param {number} h - Miller index h
+     * @param {number} k - Miller index k
+     * @param {number} l - Miller index l
+     * @param {number} color - Plane color
+     */
+    drawMillerPlane(crystal, h, k, l, color = 0x4ecdc4) {
+        if (!crystal || !crystal.lattice) return;
+
+        const { a, b, c } = crystal.lattice.toLatticeVectors();
+        
+        // Calculate plane normal in reciprocal space
+        const normal = new THREE.Vector3();
+        if (h !== 0) normal.add(a.clone().multiplyScalar(1/h));
+        if (k !== 0) normal.add(b.clone().multiplyScalar(1/k));
+        if (l !== 0) normal.add(c.clone().multiplyScalar(1/l));
+        
+        if (normal.length() === 0) return;
+        normal.normalize();
+
+        // Find intercepts with cell edges to define plane
+        const cellSize = Math.max(a.length(), b.length(), c.length()) * 2;
+        const planeGeo = new THREE.PlaneGeometry(cellSize, cellSize);
+        const planeMat = new THREE.MeshBasicMaterial({
+            color,
+            transparent: true,
+            opacity: 0.2,
+            side: THREE.DoubleSide,
+            depthWrite: false
+        });
+        
+        const plane = new THREE.Mesh(planeGeo, planeMat);
+        
+        // Position plane at origin and orient according to normal
+        plane.lookAt(normal);
+        plane.userData = { type: 'millerPlane', hkl: { h, k, l } };
+        
+        this.scene.add(plane);
+        this.millerPlanes.push(plane);
+    }
+
+    clearMillerPlanes() {
+        this.millerPlanes.forEach(mesh => {
+            if (mesh.geometry) mesh.geometry.dispose();
+            if (mesh.material) mesh.material.dispose();
+            this.scene.remove(mesh);
+        });
+        this.millerPlanes = [];
+    }
+
+    addMillerPlane(h, k, l) {
+        const mol = this.editor.molecule;
+        if (!mol || !mol.isCrystal) return;
+        
+        // Check if already exists
+        const exists = this.activePlanes.some(p => p.h === h && p.k === k && p.l === l);
+        if (exists) return;
+        
+        this.activePlanes.push({ h, k, l });
+        const colors = [0x4ecdc4, 0xf9ca24, 0xeb4d4b, 0x6c5ce7, 0xf0932b, 0x95e1d3];
+        const color = colors[this.activePlanes.length % colors.length];
+        this.drawMillerPlane(mol, h, k, l, color);
+    }
+
+    removeMillerPlane(h, k, l) {
+        this.activePlanes = this.activePlanes.filter(p => !(p.h === h && p.k === k && p.l === l));
+        
+        // Redraw all planes
+        this.clearMillerPlanes();
+        this.activePlanes.forEach((p, i) => {
+            const colors = [0x4ecdc4, 0xf9ca24, 0xeb4d4b, 0x6c5ce7, 0xf0932b, 0x95e1d3];
+            const color = colors[i % colors.length];
+            this.drawMillerPlane(this.editor.molecule, p.h, p.k, p.l, color);
+        });
+    }
+
+    clearAllMillerPlanes() {
+        this.clearMillerPlanes();
+        this.activePlanes = [];
+    }
+
     // ─── Full refresh ─────────────────────────────────────────────────────────
 
     /**
@@ -364,6 +487,7 @@ export class CrystalRenderManager {
             this.clearGhostAtoms();
             this.clearPolyhedra();
             this.clearMillerIndices();
+            this.clearMillerPlanes();
             return;
         }
         this.drawUnitCell(mol);
@@ -376,5 +500,11 @@ export class CrystalRenderManager {
         if (this.showMillerIndices) {
             this.drawMillerIndices(mol);
         }
+        // Redraw active Miller planes
+        this.activePlanes.forEach((p, i) => {
+            const colors = [0x4ecdc4, 0xf9ca24, 0xeb4d4b, 0x6c5ce7, 0xf0932b, 0x95e1d3];
+            const color = colors[i % colors.length];
+            this.drawMillerPlane(mol, p.h, p.k, p.l, color);
+        });
     }
 }

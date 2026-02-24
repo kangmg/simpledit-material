@@ -43,6 +43,7 @@ export class UIManager {
         this.bindCrystalVisualizationToggles();
         this.bindCellParamsButton();
         this.bindSlabGeneratorButton();
+        this.bindMillerPlanesButton();
         console.log('UIManager: Toolbar events bound');
     }
 
@@ -645,6 +646,29 @@ export class UIManager {
 
         if (btnClose) btnClose.onclick = closeModal;
         if (btnCancel) btnCancel.onclick = closeModal;
+
+        // Bind stepper buttons
+        document.querySelectorAll('.stepper-btn').forEach(btn => {
+            btn.onmouseenter = () => {
+                btn.style.background = '#3d3d3e';
+                btn.style.borderColor = '#555';
+                btn.style.color = '#fff';
+            };
+            btn.onmouseleave = () => {
+                btn.style.background = '#2d2d2e';
+                btn.style.borderColor = '#444';
+                btn.style.color = '#888';
+            };
+            btn.onclick = () => {
+                const targetId = btn.dataset.target;
+                const step = parseFloat(btn.dataset.step);
+                const input = document.getElementById(targetId);
+                if (input) {
+                    const currentValue = parseFloat(input.value) || 0;
+                    input.value = (currentValue + step).toFixed(2);
+                }
+            };
+        });
 
         if (btnApply) {
             btnApply.onclick = () => {
@@ -1815,5 +1839,114 @@ export class UIManager {
             const count = this.editor.molecule.atoms.length;
             countElement.textContent = `${count} atoms`;
         }
+    }
+
+    bindMillerPlanesButton() {
+        const btn = document.getElementById('btn-miller-planes');
+        const modal = document.getElementById('miller-planes-modal');
+        const backdrop = document.getElementById('modal-backdrop');
+        const btnClose = document.getElementById('miller-planes-close');
+        const btnAdd = document.getElementById('btn-add-miller-plane');
+        const btnClearAll = document.getElementById('btn-clear-all-planes');
+        const activeList = document.getElementById('active-planes-list');
+
+        if (btn) {
+            btn.onclick = () => {
+                if (!this.editor.molecule || !this.editor.molecule.isCrystal) {
+                    this.showError('No crystal loaded');
+                    return;
+                }
+                this.updateActivePlanesList();
+                if (modal && backdrop) {
+                    modal.style.display = 'block';
+                    backdrop.style.display = 'block';
+                }
+            };
+        }
+
+        const closeModal = () => {
+            if (modal) modal.style.display = 'none';
+            if (backdrop) backdrop.style.display = 'none';
+        };
+
+        if (btnClose) btnClose.onclick = closeModal;
+
+        // Preset buttons
+        document.querySelectorAll('.miller-preset-btn').forEach(btn => {
+            btn.onclick = () => {
+                const [h, k, l] = btn.dataset.hkl.split(',').map(Number);
+                document.getElementById('miller-h').value = h;
+                document.getElementById('miller-k').value = k;
+                document.getElementById('miller-l').value = l;
+            };
+        });
+
+        if (btnAdd) {
+            btnAdd.onclick = () => {
+                const h = parseInt(document.getElementById('miller-h').value);
+                const k = parseInt(document.getElementById('miller-k').value);
+                const l = parseInt(document.getElementById('miller-l').value);
+
+                if ([h, k, l].every(v => v === 0)) {
+                    this.showError('Miller indices cannot all be zero');
+                    return;
+                }
+
+                const crm = this.editor.crystalRenderManager;
+                if (crm) {
+                    crm.addMillerPlane(h, k, l);
+                    this.updateActivePlanesList();
+                    this.showSuccess(`Added plane (${h}${k}${l})`);
+                }
+            };
+        }
+
+        if (btnClearAll) {
+            btnClearAll.onclick = () => {
+                const crm = this.editor.crystalRenderManager;
+                if (crm) {
+                    crm.clearAllMillerPlanes();
+                    this.updateActivePlanesList();
+                    this.showSuccess('Cleared all planes');
+                }
+            };
+        }
+    }
+
+    updateActivePlanesList() {
+        const activeList = document.getElementById('active-planes-list');
+        if (!activeList) return;
+
+        const crm = this.editor.crystalRenderManager;
+        if (!crm || crm.activePlanes.length === 0) {
+            activeList.innerHTML = '<div style="font-size: 12px; color: #666; text-align: center; padding: 20px;">No planes added</div>';
+            return;
+        }
+
+        const colors = ['#4ecdc4', '#f9ca24', '#eb4d4b', '#6c5ce7', '#f0932b', '#95e1d3'];
+        activeList.innerHTML = crm.activePlanes.map((p, i) => {
+            const color = colors[i % colors.length];
+            return `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px; background: #2d2d2e; border-radius: 4px; margin-bottom: 5px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="width: 16px; height: 16px; background: ${color}; border-radius: 3px;"></div>
+                        <span style="font-size: 13px; color: white;">(${p.h}${p.k}${p.l})</span>
+                    </div>
+                    <button class="remove-plane-btn" data-h="${p.h}" data-k="${p.k}" data-l="${p.l}" style="padding: 4px 8px; background: #ff4444; border: none; border-radius: 4px; color: white; cursor: pointer; font-size: 11px;">Remove</button>
+                </div>
+            `;
+        }).join('');
+
+        // Bind remove buttons
+        activeList.querySelectorAll('.remove-plane-btn').forEach(btn => {
+            btn.onclick = () => {
+                const h = parseInt(btn.dataset.h);
+                const k = parseInt(btn.dataset.k);
+                const l = parseInt(btn.dataset.l);
+                crm.removeMillerPlane(h, k, l);
+                this.updateActivePlanesList();
+                this.showSuccess(`Removed plane (${h}${k}${l})`);
+            };
+        });
     }
 }
