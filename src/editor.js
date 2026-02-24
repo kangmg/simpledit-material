@@ -59,6 +59,11 @@ export class Editor {
         this.historyIndex = -1;
         this.saveState(); // Initialize with empty state
 
+        // The "fixed" unit cell used as base for supercell generation when the
+        // "Fix Unit Cell" toggle is ON.  Set whenever a crystal is loaded from
+        // a file; NOT updated when supercells or slabs are generated.
+        this.unitCellBase = null;
+
         // Local Mode
         this.isLocalMode = false;
         this.initialArgs = [];

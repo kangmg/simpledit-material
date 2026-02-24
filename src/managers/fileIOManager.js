@@ -1474,7 +1474,10 @@ export class FileIOManager {
                 }
             }
 
-            if (shouldClear) this.editor.moleculeManager.loadCrystal(crystal);
+            if (shouldClear) {
+                this.editor.moleculeManager.loadCrystal(crystal);
+                this.editor.unitCellBase = crystal;
+            }
             if (autoBond) this.editor.moleculeManager.autoBondPBC();
             this.editor.rebuildScene();
             return ErrorHandler.success(`Loaded extended XYZ crystal: ${atomCount} atoms`);
@@ -1497,6 +1500,7 @@ export class FileIOManager {
         try {
             const crystal = CIFParser.parse(content);
             const result = this.editor.moleculeManager.loadCrystal(crystal);
+            this.editor.unitCellBase = crystal;
             // Auto-bond with PBC
             this.editor.moleculeManager.autoBondPBC();
             this.editor.rebuildScene();
@@ -1546,6 +1550,7 @@ export class FileIOManager {
         try {
             const crystal = POSCARParser.parse(content);
             this.editor.moleculeManager.loadCrystal(crystal);
+            this.editor.unitCellBase = crystal;
             this.editor.moleculeManager.autoBondPBC();
             this.editor.rebuildScene();
             return ErrorHandler.success(
