@@ -6,6 +6,10 @@ import { ELEMENTS, DEFAULT_ELEMENT } from './constants.js';
 import OCL from 'openchemlib';
 import { oclManager } from './managers/oclManager.js';
 
+/**
+ * Manages multiple molecules and molecule operations
+ * Handles molecule creation, deletion, switching, and clipboard operations
+ */
 export class MoleculeManager {
     constructor(editor) {
         this.editor = editor;

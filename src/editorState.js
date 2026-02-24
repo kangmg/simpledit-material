@@ -2,6 +2,10 @@
  * Centralized state management for Editor
  * Consolidates UI settings, selection state, and manipulation mode
  */
+/**
+ * Centralized state management for the molecular editor
+ * Manages UI state, selection state, and editor mode
+ */
 export class EditorState {
     constructor() {
         // UI State

@@ -161,6 +161,42 @@
           <button id="btn-edit-2d" class="action-btn" style="margin-top: 10px;">Edit 2D</button>
         </div>
 
+        <div class="tool-section">
+          <div class="section-label">Crystal Tools</div>
+          <button id="btn-supercell" class="action-btn" style="margin-bottom: 10px;">Generate Supercell</button>
+          <div id="supercell-controls" style="display: none; margin-top: 10px;">
+            <div style="margin-bottom: 10px; font-size: 12px; color: #888;">Supercell Matrix (3×3)</div>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-bottom: 10px;">
+              <input type="number" id="sc-s11" value="2" min="1" max="5" style="width: 100%; padding: 6px; background: #2d2d2e; border: 1px solid #444; border-radius: 4px; color: white; text-align: center;">
+              <input type="number" id="sc-s12" value="0" min="0" max="5" style="width: 100%; padding: 6px; background: #2d2d2e; border: 1px solid #444; border-radius: 4px; color: white; text-align: center;">
+              <input type="number" id="sc-s13" value="0" min="0" max="5" style="width: 100%; padding: 6px; background: #2d2d2e; border: 1px solid #444; border-radius: 4px; color: white; text-align: center;">
+              <input type="number" id="sc-s21" value="0" min="0" max="5" style="width: 100%; padding: 6px; background: #2d2d2e; border: 1px solid #444; border-radius: 4px; color: white; text-align: center;">
+              <input type="number" id="sc-s22" value="2" min="1" max="5" style="width: 100%; padding: 6px; background: #2d2d2e; border: 1px solid #444; border-radius: 4px; color: white; text-align: center;">
+              <input type="number" id="sc-s23" value="0" min="0" max="5" style="width: 100%; padding: 6px; background: #2d2d2e; border: 1px solid #444; border-radius: 4px; color: white; text-align: center;">
+              <input type="number" id="sc-s31" value="0" min="0" max="5" style="width: 100%; padding: 6px; background: #2d2d2e; border: 1px solid #444; border-radius: 4px; color: white; text-align: center;">
+              <input type="number" id="sc-s32" value="0" min="0" max="5" style="width: 100%; padding: 6px; background: #2d2d2e; border: 1px solid #444; border-radius: 4px; color: white; text-align: center;">
+              <input type="number" id="sc-s33" value="2" min="1" max="5" style="width: 100%; padding: 6px; background: #2d2d2e; border: 1px solid #444; border-radius: 4px; color: white; text-align: center;">
+            </div>
+            <div style="display: flex; gap: 5px;">
+              <button id="btn-supercell-apply" class="action-btn" style="flex: 1;">Apply</button>
+              <button id="btn-supercell-cancel" class="action-btn" style="flex: 1; background: #ff4444;">Cancel</button>
+            </div>
+            <div style="margin-top: 10px; font-size: 11px; color: #666;">
+              <div style="display: flex; justify-content: space-between;">
+                <span>Simple:</span>
+                <button id="btn-supercell-simple" class="action-btn" style="padding: 4px 8px; font-size: 11px;">2×2×2</button>
+              </div>
+            </div>
+          </div>
+        </div>
+<task_progress>
+- [x] 기존 UI 구조 분석
+- [x] supercell UI 컴포넌트 설계
+- [x] UI 구현
+- [ ] 스타일 맞추기
+- [ ] 기능 통합 및 테스트
+</task_progress>
+
         <div id="geometry-controls" class="tool-section" style="display: none;">
           <div class="section-label">Geometry</div>
           <div id="length-control" style="display: none; margin-bottom: 10px;">

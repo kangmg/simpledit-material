@@ -2,8 +2,12 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { TrackballControls } from 'three/addons/controls/TrackballControls.js';
 
+/**
+ * Three.js rendering manager for the molecular editor
+ * Handles scene setup, camera controls, and 3D visualization
+ */
 export class Renderer {
-  constructor(canvas) {
+    constructor(canvas) {
     this.canvas = canvas;
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0xffffff);

@@ -17,6 +17,10 @@ import { RenderManager } from './managers/renderManager.js';
 import { GeometryController } from './managers/geometryController.js';
 import { CrystalRenderManager } from './managers/crystalRenderManager.js';
 
+/**
+ * Main editor class - central orchestrator for the molecular editor
+ * Manages all managers, state, rendering, and user interactions
+ */
 export class Editor {
     constructor() {
         this.canvas = document.getElementById('editor-canvas');

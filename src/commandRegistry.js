@@ -205,7 +205,6 @@ export class CommandRegistry {
             // add mol <format>
             if (subCmd === 'mol' || subCmd === 'molecule') {
                 // Parse flags
-                // Parse flags
                 const generate2D = args.includes('-2d');
                 const generate3D = !generate2D; // Default to 3D unless -2d is specified
                 const addHydrogens = args.includes('-h');
@@ -240,6 +239,15 @@ export class CommandRegistry {
                             this.editor.fileIOManager.importXYZ(data, { shouldClear: false, autoBond: true });
                             this.editor.moleculeManager.updateUI();
                             return { success: 'Imported XYZ data' };
+                        } else if (format === 'cif') {
+                            const result = this.editor.fileIOManager.importCIF(data);
+                            if (result && result.error) {
+                                return { error: result.error };
+                            } else {
+                                this.editor.rebuildScene();
+                                this.editor.moleculeManager.updateUI();
+                                return { success: 'Imported CIF data' };
+                            }
                         }
                         return { error: `Inline data not supported for ${format}` };
                     } catch (e) {
@@ -247,7 +255,7 @@ export class CommandRegistry {
                     }
                 }
 
-                if (['xyz', 'smi', 'smiles', 'sdf', 'mol'].includes(format)) {
+                if (['xyz', 'smi', 'smiles', 'sdf', 'mol', 'cif'].includes(format)) {
                     // Interactive format mode
                     this.editor.console.startInputMode(`${format.toUpperCase()}> `, async (data) => {
                         try {
@@ -263,6 +271,11 @@ export class CommandRegistry {
                                 });
                             } else if (format === 'sdf' || format === 'mol') {
                                 result = this.editor.fileIOManager.importSDF(data, { shouldClear: false, autoBond: false });
+                            } else if (format === 'cif') {
+                                result = this.editor.fileIOManager.importCIF(data);
+                                if (result && result.success) {
+                                    this.editor.rebuildScene();
+                                }
                             } else {
                                 this.editor.console.print('Format not implemented', 'warning');
                                 return;

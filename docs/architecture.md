@@ -293,6 +293,28 @@ src/
     └── objectPool.js
 ```
 
+## API Documentation
+
+The API documentation is automatically generated from JSDoc comments in the source code. You can find the complete API reference in the [API docs](./api/index.html) file.
+
+### Key Classes
+
+- **Editor** - Main editor class and central orchestrator
+- **EditorState** - Centralized state management
+- **MoleculeManager** - Multi-molecule support and operations
+- **RenderManager** - 3D rendering and visualization
+- **GeometryEngine** - Pure geometry calculations
+- **FileIOManager** - File import/export operations
+- **SelectionManager** - Atom selection logic
+- **UIManager** - User interface interactions
+
+### Core Data Structures
+
+- **Atom** - Represents an atom with element, position, and bonds
+- **Bond** - Represents a chemical bond between atoms
+- **Molecule** - Contains atoms and bonds with serialization methods
+- **Crystal** - Extends Molecule with lattice parameters for periodic structures
+
 ## Summary
 
 Simpledit uses a **modular, manager-based architecture** with:
