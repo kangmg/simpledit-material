@@ -144,6 +144,12 @@ export class CrystalRenderManager {
         const thresholdSlider = document.getElementById('bond-threshold');
         const bondThreshold = thresholdSlider ? parseFloat(thresholdSlider.value) : 1.2;
 
+        // Pre-calculate max search radius for optimization
+        const maxRadius = Math.max(...crystal.atoms.map(atom => 
+            renderManager.getElementRadius(atom.element)
+        ));
+        const maxSearchDist = maxRadius * 2 * bondThreshold;
+
         // For each atom in home cell
         crystal.atoms.forEach(homeAtom => {
             const homeRadius = renderManager.getElementRadius(homeAtom.element);
@@ -166,6 +172,9 @@ export class CrystalRenderManager {
                             
                             const ghostPos = otherAtom.position.clone().add(offset);
                             const dist = homeAtom.position.distanceTo(ghostPos);
+                            
+                            // Skip if too far (optimization)
+                            if (dist > maxSearchDist) continue;
                             
                             // If within bonding distance
                             if (dist < maxBondDist) {
@@ -216,7 +225,10 @@ export class CrystalRenderManager {
     clearGhostAtoms() {
         this.ghostMeshes.forEach(mesh => {
             if (mesh.geometry) mesh.geometry.dispose();
-            if (mesh.material) mesh.material.dispose();
+            if (mesh.material) {
+                if (mesh.material.map) mesh.material.map.dispose();
+                mesh.material.dispose();
+            }
             this.scene.remove(mesh);
         });
         this.ghostMeshes = [];
@@ -331,7 +343,14 @@ export class CrystalRenderManager {
         if (!crystal || !crystal.lattice || !this.showMillerIndices) return;
 
         const { a, b, c } = crystal.lattice.toLatticeVectors();
-        const origin = new THREE.Vector3(0, 0, 0);
+        
+        // Calculate reciprocal lattice vectors
+        const V = a.dot(b.clone().cross(c));
+        if (Math.abs(V) < 1e-10) return;
+        
+        const aStar = b.clone().cross(c).divideScalar(V);
+        const bStar = c.clone().cross(a).divideScalar(V);
+        const cStar = a.clone().cross(b).divideScalar(V);
 
         // Common Miller indices to display
         const indices = [
@@ -345,11 +364,11 @@ export class CrystalRenderManager {
         ];
 
         indices.forEach(({ h, k, l, color }) => {
-            // Calculate plane normal
-            const normal = new THREE.Vector3();
-            if (h !== 0) normal.add(a.clone().multiplyScalar(1/h));
-            if (k !== 0) normal.add(b.clone().multiplyScalar(1/k));
-            if (l !== 0) normal.add(c.clone().multiplyScalar(1/l));
+            // Calculate plane normal using reciprocal lattice
+            const normal = new THREE.Vector3()
+                .addScaledVector(aStar, h)
+                .addScaledVector(bStar, k)
+                .addScaledVector(cStar, l);
             
             if (normal.length() === 0) return;
             normal.normalize();
@@ -412,16 +431,24 @@ export class CrystalRenderManager {
 
         const { a, b, c } = crystal.lattice.toLatticeVectors();
         
+        // Calculate reciprocal lattice vectors
+        const V = a.dot(b.clone().cross(c)); // Unit cell volume
+        if (Math.abs(V) < 1e-10) return; // Degenerate cell
+        
+        const aStar = b.clone().cross(c).divideScalar(V);
+        const bStar = c.clone().cross(a).divideScalar(V);
+        const cStar = a.clone().cross(b).divideScalar(V);
+        
         // Calculate plane normal in reciprocal space
-        const normal = new THREE.Vector3();
-        if (h !== 0) normal.add(a.clone().multiplyScalar(1/h));
-        if (k !== 0) normal.add(b.clone().multiplyScalar(1/k));
-        if (l !== 0) normal.add(c.clone().multiplyScalar(1/l));
+        const normal = new THREE.Vector3()
+            .addScaledVector(aStar, h)
+            .addScaledVector(bStar, k)
+            .addScaledVector(cStar, l);
         
         if (normal.length() === 0) return;
         normal.normalize();
 
-        // Find intercepts with cell edges to define plane
+        // Find plane size based on cell dimensions
         const cellSize = Math.max(a.length(), b.length(), c.length()) * 2;
         const planeGeo = new THREE.PlaneGeometry(cellSize, cellSize);
         const planeMat = new THREE.MeshBasicMaterial({
