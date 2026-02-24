@@ -647,17 +647,23 @@ export class UIManager {
         if (btnClose) btnClose.onclick = closeModal;
         if (btnCancel) btnCancel.onclick = closeModal;
 
-        // Bind stepper buttons
+        // Bind stepper buttons with hover effects
         document.querySelectorAll('.stepper-btn').forEach(btn => {
+            const isMinus = btn.classList.contains('stepper-minus');
+            
             btn.onmouseenter = () => {
-                btn.style.background = '#3d3d3e';
-                btn.style.borderColor = '#555';
-                btn.style.color = '#fff';
+                btn.style.transform = 'scale(1.05)';
+                btn.style.boxShadow = '0 4px 8px rgba(0,0,0,0.3)';
             };
             btn.onmouseleave = () => {
-                btn.style.background = '#2d2d2e';
-                btn.style.borderColor = '#444';
-                btn.style.color = '#888';
+                btn.style.transform = 'scale(1)';
+                btn.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
+            };
+            btn.onmousedown = () => {
+                btn.style.transform = 'scale(0.95)';
+            };
+            btn.onmouseup = () => {
+                btn.style.transform = 'scale(1.05)';
             };
             btn.onclick = () => {
                 const targetId = btn.dataset.target;

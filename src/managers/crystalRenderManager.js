@@ -138,8 +138,11 @@ export class CrystalRenderManager {
         if (!crystal || !crystal.lattice || !this.showGhosts) return;
 
         const { a, b, c } = crystal.lattice.toLatticeVectors();
-        const drawnGhosts = new Map(); // Track drawn ghost atoms: key -> {mesh, position}
-        const bondThreshold = this.editor.state.bondThreshold; // Use viewer's bond threshold
+        const drawnGhosts = new Map();
+        
+        // Get bond threshold from slider
+        const thresholdSlider = document.getElementById('bond-threshold');
+        const bondThreshold = thresholdSlider ? parseFloat(thresholdSlider.value) : 1.2;
 
         // For each atom in home cell
         crystal.atoms.forEach(homeAtom => {
