@@ -548,13 +548,6 @@ export class UIManager {
             };
         }
     }
-<task_progress>
-- [x] 기존 UI 구조 분석
-- [x] supercell UI 컴포넌트 설계
-- [x] UI 구현
-- [x] 스타일 맞추기
-- [ ] 기능 통합 및 테스트
-</task_progress>
 
     /**
      * Bind coordinate editor button
