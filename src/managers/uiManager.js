@@ -502,15 +502,21 @@ export class UIManager {
 
         if (btnSupercell) {
             btnSupercell.onclick = () => {
+                console.log('Supercell button clicked');
                 if (!this.editor.molecule || !this.editor.molecule.isCrystal) {
                     this.showError('No crystal loaded');
                     return;
                 }
+                console.log('Opening supercell modal');
                 if (modal && backdrop) {
                     modal.style.display = 'block';
                     backdrop.style.display = 'block';
+                } else {
+                    console.error('Modal or backdrop not found', { modal, backdrop });
                 }
             };
+        } else {
+            console.error('Supercell button not found');
         }
 
         const closeModal = () => {
