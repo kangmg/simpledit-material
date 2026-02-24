@@ -469,8 +469,8 @@
     </div>
 
     <!-- Miller Planes Modal -->
-    <div id="miller-planes-modal" class="modal-content" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 25px; z-index: 1000; width: 450px; max-height: 80vh; overflow-y: auto;">
-      <div class="modal-header" style="display: flex; align-items: center; justify-content: center; margin-bottom: 20px; position: relative;">
+    <div id="miller-planes-modal" class="modal-content" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 30px; z-index: 1000; width: 480px; max-height: 85vh; overflow-y: auto;">
+      <div class="modal-header" style="display: flex; align-items: center; justify-content: center; margin-bottom: 25px; position: relative;">
         <div class="mac-window-controls" style="position: absolute; left: 0;">
           <button id="miller-planes-close" class="mac-btn mac-close-btn"></button>
           <button class="mac-btn mac-minimize-btn"></button>
@@ -479,42 +479,46 @@
         <h3 style="margin: 0; color: white;">Miller Planes</h3>
       </div>
       
+      <div style="margin-bottom: 25px;">
+        <label style="font-size: 13px; color: #aaa; display: block; margin-bottom: 12px;">Add Plane</label>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 10px; align-items: end;">
+          <div>
+            <label style="font-size: 12px; color: #888; display: block; margin-bottom: 6px;">h</label>
+            <input type="number" id="miller-h" value="0" min="-5" max="5" style="width: 100%; padding: 10px; background: #2d2d2e; border: 1px solid #444; border-radius: 6px; color: white; text-align: center; font-size: 14px; box-sizing: border-box;">
+          </div>
+          <div>
+            <label style="font-size: 12px; color: #888; display: block; margin-bottom: 6px;">k</label>
+            <input type="number" id="miller-k" value="0" min="-5" max="5" style="width: 100%; padding: 10px; background: #2d2d2e; border: 1px solid #444; border-radius: 6px; color: white; text-align: center; font-size: 14px; box-sizing: border-box;">
+          </div>
+          <div>
+            <label style="font-size: 12px; color: #888; display: block; margin-bottom: 6px;">l</label>
+            <input type="number" id="miller-l" value="1" min="-5" max="5" style="width: 100%; padding: 10px; background: #2d2d2e; border: 1px solid #444; border-radius: 6px; color: white; text-align: center; font-size: 14px; box-sizing: border-box;">
+          </div>
+          <button id="btn-add-miller-plane" class="action-btn primary-btn" style="padding: 10px 20px; font-size: 13px;">Add</button>
+        </div>
+      </div>
+
       <div style="margin-bottom: 20px;">
-        <label style="font-size: 12px; color: #888; display: block; margin-bottom: 10px;">Add Plane</label>
-        <div style="display: flex; gap: 8px; align-items: flex-end;">
-          <div style="flex: 1;">
-            <label style="font-size: 11px; color: #666;">h</label>
-            <input type="number" id="miller-h" value="0" min="-5" max="5" style="width: 100%; padding: 8px; background: #2d2d2e; border: 1px solid #444; border-radius: 4px; color: white; text-align: center;">
-          </div>
-          <div style="flex: 1;">
-            <label style="font-size: 11px; color: #666;">k</label>
-            <input type="number" id="miller-k" value="0" min="-5" max="5" style="width: 100%; padding: 8px; background: #2d2d2e; border: 1px solid #444; border-radius: 4px; color: white; text-align: center;">
-          </div>
-          <div style="flex: 1;">
-            <label style="font-size: 11px; color: #666;">l</label>
-            <input type="number" id="miller-l" value="1" min="-5" max="5" style="width: 100%; padding: 8px; background: #2d2d2e; border: 1px solid #444; border-radius: 4px; color: white; text-align: center;">
-          </div>
-          <button id="btn-add-miller-plane" class="action-btn primary-btn" style="padding: 8px 16px;">Add</button>
+        <label style="font-size: 13px; color: #aaa; display: block; margin-bottom: 10px;">Quick Presets</label>
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+          <button class="miller-preset-btn action-btn" data-hkl="1,0,0" style="padding: 8px; font-size: 12px;">(100)</button>
+          <button class="miller-preset-btn action-btn" data-hkl="0,1,0" style="padding: 8px; font-size: 12px;">(010)</button>
+          <button class="miller-preset-btn action-btn" data-hkl="0,0,1" style="padding: 8px; font-size: 12px;">(001)</button>
+          <button class="miller-preset-btn action-btn" data-hkl="1,1,0" style="padding: 8px; font-size: 12px;">(110)</button>
+          <button class="miller-preset-btn action-btn" data-hkl="1,0,1" style="padding: 8px; font-size: 12px;">(101)</button>
+          <button class="miller-preset-btn action-btn" data-hkl="0,1,1" style="padding: 8px; font-size: 12px;">(011)</button>
+          <button class="miller-preset-btn action-btn" data-hkl="1,1,1" style="padding: 8px; font-size: 12px;">(111)</button>
+          <button class="miller-preset-btn action-btn" data-hkl="2,1,1" style="padding: 8px; font-size: 12px;">(211)</button>
         </div>
       </div>
 
-      <div style="margin-bottom: 15px; display: flex; gap: 5px; flex-wrap: wrap;">
-        <button class="miller-preset-btn action-btn" data-hkl="1,0,0" style="flex: 1; min-width: 70px; font-size: 11px;">(100)</button>
-        <button class="miller-preset-btn action-btn" data-hkl="0,1,0" style="flex: 1; min-width: 70px; font-size: 11px;">(010)</button>
-        <button class="miller-preset-btn action-btn" data-hkl="0,0,1" style="flex: 1; min-width: 70px; font-size: 11px;">(001)</button>
-        <button class="miller-preset-btn action-btn" data-hkl="1,1,0" style="flex: 1; min-width: 70px; font-size: 11px;">(110)</button>
-        <button class="miller-preset-btn action-btn" data-hkl="1,0,1" style="flex: 1; min-width: 70px; font-size: 11px;">(101)</button>
-        <button class="miller-preset-btn action-btn" data-hkl="0,1,1" style="flex: 1; min-width: 70px; font-size: 11px;">(011)</button>
-        <button class="miller-preset-btn action-btn" data-hkl="1,1,1" style="flex: 1; min-width: 70px; font-size: 11px;">(111)</button>
-      </div>
-
-      <div style="margin-bottom: 15px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-          <label style="font-size: 12px; color: #888;">Active Planes</label>
-          <button id="btn-clear-all-planes" class="action-btn" style="padding: 4px 12px; font-size: 11px; background: #ff4444;">Clear All</button>
+      <div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <label style="font-size: 13px; color: #aaa;">Active Planes</label>
+          <button id="btn-clear-all-planes" class="action-btn" style="padding: 6px 14px; font-size: 12px; background: #ff4444;">Clear All</button>
         </div>
-        <div id="active-planes-list" style="max-height: 200px; overflow-y: auto;">
-          <div style="font-size: 12px; color: #666; text-align: center; padding: 20px;">No planes added</div>
+        <div id="active-planes-list" style="max-height: 250px; overflow-y: auto; background: #1a1a1a; border-radius: 8px; padding: 10px;">
+          <div style="font-size: 13px; color: #666; text-align: center; padding: 30px;">No planes added</div>
         </div>
       </div>
     </div>
