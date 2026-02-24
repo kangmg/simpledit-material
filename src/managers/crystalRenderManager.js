@@ -139,7 +139,7 @@ export class CrystalRenderManager {
 
         const { a, b, c } = crystal.lattice.toLatticeVectors();
         const drawnGhosts = new Map(); // Track drawn ghost atoms: key -> {mesh, position}
-        const bondThreshold = 1.2; // Multiplier for covalent radii sum
+        const bondThreshold = this.editor.state.bondThreshold; // Use viewer's bond threshold
 
         // For each atom in home cell
         crystal.atoms.forEach(homeAtom => {
