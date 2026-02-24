@@ -32,6 +32,10 @@ export class CrystalRenderManager {
         this.showPolyhedra = false;
         /** Elements that are polyhedra centres (empty = all with CN ≥ 3) */
         this.polyhedralElements = [];
+
+        /** @type {THREE.Sprite[]} Miller index labels */
+        this.millerLabels = [];
+        this.showMillerIndices = false;
     }
 
     // ─── Unit cell wireframe ──────────────────────────────────────────────────
@@ -270,6 +274,83 @@ export class CrystalRenderManager {
         if (!visible) this.clearPolyhedra();
     }
 
+    // ─── Miller Indices ───────────────────────────────────────────────────────
+
+    /**
+     * Draw Miller index labels for major crystal planes
+     * @param {import('../crystal.js').Crystal} crystal
+     */
+    drawMillerIndices(crystal) {
+        this.clearMillerIndices();
+        if (!crystal || !crystal.lattice || !this.showMillerIndices) return;
+
+        const { a, b, c } = crystal.lattice.toLatticeVectors();
+        const origin = new THREE.Vector3(0, 0, 0);
+
+        // Common Miller indices to display
+        const indices = [
+            { h: 1, k: 0, l: 0, color: '#ff6b6b' },
+            { h: 0, k: 1, l: 0, color: '#4ecdc4' },
+            { h: 0, k: 0, l: 1, color: '#95e1d3' },
+            { h: 1, k: 1, l: 0, color: '#f9ca24' },
+            { h: 1, k: 0, l: 1, color: '#f0932b' },
+            { h: 0, k: 1, l: 1, color: '#eb4d4b' },
+            { h: 1, k: 1, l: 1, color: '#6c5ce7' }
+        ];
+
+        indices.forEach(({ h, k, l, color }) => {
+            // Calculate plane normal
+            const normal = new THREE.Vector3();
+            if (h !== 0) normal.add(a.clone().multiplyScalar(1/h));
+            if (k !== 0) normal.add(b.clone().multiplyScalar(1/k));
+            if (l !== 0) normal.add(c.clone().multiplyScalar(1/l));
+            
+            if (normal.length() === 0) return;
+            normal.normalize();
+
+            // Position label at plane intersection with cell
+            const scale = Math.max(a.length(), b.length(), c.length()) * 0.5;
+            const position = normal.clone().multiplyScalar(scale);
+
+            const sprite = this.createTextSprite(`(${h}${k}${l})`, color);
+            sprite.position.copy(position);
+            sprite.scale.set(2, 1, 1);
+            this.scene.add(sprite);
+            this.millerLabels.push(sprite);
+        });
+    }
+
+    createTextSprite(text, color = '#ffffff') {
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        canvas.width = 256;
+        canvas.height = 128;
+
+        context.fillStyle = color;
+        context.font = 'Bold 48px Arial';
+        context.textAlign = 'center';
+        context.textBaseline = 'middle';
+        context.fillText(text, 128, 64);
+
+        const texture = new THREE.CanvasTexture(canvas);
+        const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
+        return new THREE.Sprite(material);
+    }
+
+    clearMillerIndices() {
+        this.millerLabels.forEach(sprite => {
+            if (sprite.material.map) sprite.material.map.dispose();
+            if (sprite.material) sprite.material.dispose();
+            this.scene.remove(sprite);
+        });
+        this.millerLabels = [];
+    }
+
+    setMillerIndices(visible) {
+        this.showMillerIndices = visible;
+        if (!visible) this.clearMillerIndices();
+    }
+
     // ─── Full refresh ─────────────────────────────────────────────────────────
 
     /**
@@ -282,6 +363,7 @@ export class CrystalRenderManager {
             this.clearUnitCell();
             this.clearGhostAtoms();
             this.clearPolyhedra();
+            this.clearMillerIndices();
             return;
         }
         this.drawUnitCell(mol);
@@ -290,6 +372,9 @@ export class CrystalRenderManager {
         }
         if (this.showPolyhedra) {
             this.drawPolyhedra(mol, this.editor.renderManager);
+        }
+        if (this.showMillerIndices) {
+            this.drawMillerIndices(mol);
         }
     }
 }

@@ -191,30 +191,38 @@
             </label>
           </div>
 
-          <button id="btn-supercell" class="action-btn" style="margin-bottom: 10px;">Generate Supercell</button>
-          <div id="supercell-controls" style="display: none; margin-top: 10px;">
-            <div style="margin-bottom: 10px; font-size: 12px; color: #888;">Supercell Matrix (3×3)</div>
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-bottom: 10px;">
-              <input type="number" id="sc-s11" value="2" min="1" max="5" style="width: 100%; padding: 6px; background: #2d2d2e; border: 1px solid #444; border-radius: 4px; color: white; text-align: center;">
-              <input type="number" id="sc-s12" value="0" min="0" max="5" style="width: 100%; padding: 6px; background: #2d2d2e; border: 1px solid #444; border-radius: 4px; color: white; text-align: center;">
-              <input type="number" id="sc-s13" value="0" min="0" max="5" style="width: 100%; padding: 6px; background: #2d2d2e; border: 1px solid #444; border-radius: 4px; color: white; text-align: center;">
-              <input type="number" id="sc-s21" value="0" min="0" max="5" style="width: 100%; padding: 6px; background: #2d2d2e; border: 1px solid #444; border-radius: 4px; color: white; text-align: center;">
-              <input type="number" id="sc-s22" value="2" min="1" max="5" style="width: 100%; padding: 6px; background: #2d2d2e; border: 1px solid #444; border-radius: 4px; color: white; text-align: center;">
-              <input type="number" id="sc-s23" value="0" min="0" max="5" style="width: 100%; padding: 6px; background: #2d2d2e; border: 1px solid #444; border-radius: 4px; color: white; text-align: center;">
-              <input type="number" id="sc-s31" value="0" min="0" max="5" style="width: 100%; padding: 6px; background: #2d2d2e; border: 1px solid #444; border-radius: 4px; color: white; text-align: center;">
-              <input type="number" id="sc-s32" value="0" min="0" max="5" style="width: 100%; padding: 6px; background: #2d2d2e; border: 1px solid #444; border-radius: 4px; color: white; text-align: center;">
-              <input type="number" id="sc-s33" value="2" min="1" max="5" style="width: 100%; padding: 6px; background: #2d2d2e; border: 1px solid #444; border-radius: 4px; color: white; text-align: center;">
-            </div>
-            <div style="display: flex; gap: 5px;">
-              <button id="btn-supercell-apply" class="action-btn" style="flex: 1;">Apply</button>
-              <button id="btn-supercell-cancel" class="action-btn" style="flex: 1; background: #ff4444;">Cancel</button>
-            </div>
-            <div style="margin-top: 10px; font-size: 11px; color: #666;">
-              <div style="display: flex; justify-content: space-between;">
-                <span>Simple:</span>
-                <button id="btn-supercell-simple" class="action-btn" style="padding: 4px 8px; font-size: 11px;">2×2×2</button>
-              </div>
-            </div>
+          <button id="btn-cell-params" class="action-btn" style="margin-bottom: 5px;">Cell Parameters</button>
+          <button id="btn-supercell" class="action-btn" style="margin-bottom: 5px;">Generate Supercell</button>
+          <button id="btn-slab-generator" class="action-btn" style="margin-bottom: 10px;">Generate Slab</button>
+
+          <div style="margin-bottom: 10px; font-size: 12px; color: #888;">Visualization</div>
+          <div class="control-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <span style="font-size: 12px; color: #ccc;">Unit Cell</span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="chk-unitcell" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="control-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <span style="font-size: 12px; color: #ccc;">Ghost Atoms</span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="chk-ghost">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="control-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <span style="font-size: 12px; color: #ccc;">Polyhedra</span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="chk-polyhedra">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="control-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <span style="font-size: 12px; color: #ccc;">Miller Indices</span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="chk-miller-indices">
+              <span class="toggle-slider"></span>
+            </label>
           </div>
         </div>
 
@@ -330,6 +338,137 @@
         style="display: grid; grid-template-columns: repeat(18, 36px); gap: 4px; margin-top: 10px;"></div>
       <!-- Functional Groups View -->
       <div id="functional-groups-grid" style="display: none; flex-direction: column; gap: 15px;"></div>
+    </div>
+
+    <!-- Cell Parameters Modal -->
+    <div id="cell-modal" class="modal-content" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 25px; z-index: 1000; width: 400px;">
+      <div class="modal-header" style="display: flex; align-items: center; justify-content: center; margin-bottom: 20px; position: relative;">
+        <div class="mac-window-controls" style="position: absolute; left: 0;">
+          <button id="cell-close" class="mac-btn mac-close-btn"></button>
+          <button class="mac-btn mac-minimize-btn"></button>
+          <button class="mac-btn mac-maximize-btn"></button>
+        </div>
+        <h3 style="margin: 0; color: white;">Cell Parameters</h3>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+        <div>
+          <label style="font-size: 12px; color: #888;">a (Å)</label>
+          <input type="number" id="cell-a" step="0.01" style="width: 100%; padding: 8px; background: #2d2d2e; border: 1px solid #444; border-radius: 4px; color: white;">
+        </div>
+        <div>
+          <label style="font-size: 12px; color: #888;">b (Å)</label>
+          <input type="number" id="cell-b" step="0.01" style="width: 100%; padding: 8px; background: #2d2d2e; border: 1px solid #444; border-radius: 4px; color: white;">
+        </div>
+        <div>
+          <label style="font-size: 12px; color: #888;">c (Å)</label>
+          <input type="number" id="cell-c" step="0.01" style="width: 100%; padding: 8px; background: #2d2d2e; border: 1px solid #444; border-radius: 4px; color: white;">
+        </div>
+        <div>
+          <label style="font-size: 12px; color: #888;">α (°)</label>
+          <input type="number" id="cell-alpha" step="0.1" style="width: 100%; padding: 8px; background: #2d2d2e; border: 1px solid #444; border-radius: 4px; color: white;">
+        </div>
+        <div>
+          <label style="font-size: 12px; color: #888;">β (°)</label>
+          <input type="number" id="cell-beta" step="0.1" style="width: 100%; padding: 8px; background: #2d2d2e; border: 1px solid #444; border-radius: 4px; color: white;">
+        </div>
+        <div>
+          <label style="font-size: 12px; color: #888;">γ (°)</label>
+          <input type="number" id="cell-gamma" step="0.1" style="width: 100%; padding: 8px; background: #2d2d2e; border: 1px solid #444; border-radius: 4px; color: white;">
+        </div>
+      </div>
+      <div style="display: flex; gap: 10px;">
+        <button id="btn-cell-apply" class="action-btn primary-btn" style="flex: 1;">Apply</button>
+        <button id="btn-cell-cancel" class="action-btn" style="flex: 1; background: #ff4444;">Cancel</button>
+      </div>
+    </div>
+
+    <!-- Supercell Modal -->
+    <div id="supercell-modal" class="modal-content" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 25px; z-index: 1000; width: 400px;">
+      <div class="modal-header" style="display: flex; align-items: center; justify-content: center; margin-bottom: 20px; position: relative;">
+        <div class="mac-window-controls" style="position: absolute; left: 0;">
+          <button id="supercell-close" class="mac-btn mac-close-btn"></button>
+          <button class="mac-btn mac-minimize-btn"></button>
+          <button class="mac-btn mac-maximize-btn"></button>
+        </div>
+        <h3 style="margin: 0; color: white;">Generate Supercell</h3>
+      </div>
+      <div style="margin-bottom: 15px; font-size: 12px; color: #888;">Transformation Matrix (3×3)</div>
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-bottom: 15px;">
+        <input type="number" id="sc-s11" value="2" min="1" max="10" style="width: 100%; padding: 8px; background: #2d2d2e; border: 1px solid #444; border-radius: 4px; color: white; text-align: center;">
+        <input type="number" id="sc-s12" value="0" min="-10" max="10" style="width: 100%; padding: 8px; background: #2d2d2e; border: 1px solid #444; border-radius: 4px; color: white; text-align: center;">
+        <input type="number" id="sc-s13" value="0" min="-10" max="10" style="width: 100%; padding: 8px; background: #2d2d2e; border: 1px solid #444; border-radius: 4px; color: white; text-align: center;">
+        <input type="number" id="sc-s21" value="0" min="-10" max="10" style="width: 100%; padding: 8px; background: #2d2d2e; border: 1px solid #444; border-radius: 4px; color: white; text-align: center;">
+        <input type="number" id="sc-s22" value="2" min="1" max="10" style="width: 100%; padding: 8px; background: #2d2d2e; border: 1px solid #444; border-radius: 4px; color: white; text-align: center;">
+        <input type="number" id="sc-s23" value="0" min="-10" max="10" style="width: 100%; padding: 8px; background: #2d2d2e; border: 1px solid #444; border-radius: 4px; color: white; text-align: center;">
+        <input type="number" id="sc-s31" value="0" min="-10" max="10" style="width: 100%; padding: 8px; background: #2d2d2e; border: 1px solid #444; border-radius: 4px; color: white; text-align: center;">
+        <input type="number" id="sc-s32" value="0" min="-10" max="10" style="width: 100%; padding: 8px; background: #2d2d2e; border: 1px solid #444; border-radius: 4px; color: white; text-align: center;">
+        <input type="number" id="sc-s33" value="2" min="1" max="10" style="width: 100%; padding: 8px; background: #2d2d2e; border: 1px solid #444; border-radius: 4px; color: white; text-align: center;">
+      </div>
+      <div style="margin-bottom: 15px; display: flex; gap: 5px;">
+        <button id="btn-sc-preset-222" class="action-btn" style="flex: 1; font-size: 11px;">2×2×2</button>
+        <button id="btn-sc-preset-333" class="action-btn" style="flex: 1; font-size: 11px;">3×3×3</button>
+        <button id="btn-sc-preset-identity" class="action-btn" style="flex: 1; font-size: 11px;">Reset</button>
+      </div>
+      <div style="display: flex; gap: 10px;">
+        <button id="btn-supercell-apply" class="action-btn primary-btn" style="flex: 1;">Generate</button>
+        <button id="btn-supercell-cancel" class="action-btn" style="flex: 1; background: #ff4444;">Cancel</button>
+      </div>
+    </div>
+
+    <!-- Slab Generator Modal -->
+    <div id="slab-modal" class="modal-content" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 25px; z-index: 1000; width: 400px;">
+      <div class="modal-header" style="display: flex; align-items: center; justify-content: center; margin-bottom: 20px; position: relative;">
+        <div class="mac-window-controls" style="position: absolute; left: 0;">
+          <button id="slab-close" class="mac-btn mac-close-btn"></button>
+          <button class="mac-btn mac-minimize-btn"></button>
+          <button class="mac-btn mac-maximize-btn"></button>
+        </div>
+        <h3 style="margin: 0; color: white;">Generate Slab</h3>
+      </div>
+      <div style="margin-bottom: 15px;">
+        <label style="font-size: 12px; color: #888; display: block; margin-bottom: 5px;">Miller Indices (hkl)</label>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+          <div>
+            <label style="font-size: 11px; color: #666;">h</label>
+            <input type="number" id="slab-h" value="0" min="-5" max="5" style="width: 100%; padding: 8px; background: #2d2d2e; border: 1px solid #444; border-radius: 4px; color: white; text-align: center;">
+          </div>
+          <div>
+            <label style="font-size: 11px; color: #666;">k</label>
+            <input type="number" id="slab-k" value="0" min="-5" max="5" style="width: 100%; padding: 8px; background: #2d2d2e; border: 1px solid #444; border-radius: 4px; color: white; text-align: center;">
+          </div>
+          <div>
+            <label style="font-size: 11px; color: #666;">l</label>
+            <input type="number" id="slab-l" value="1" min="-5" max="5" style="width: 100%; padding: 8px; background: #2d2d2e; border: 1px solid #444; border-radius: 4px; color: white; text-align: center;">
+          </div>
+        </div>
+      </div>
+      <div style="margin-bottom: 15px; display: flex; gap: 10px;">
+        <div style="flex: 1;">
+          <label style="font-size: 12px; color: #888; display: block; margin-bottom: 5px;">Layers</label>
+          <input type="number" id="slab-layers" value="4" min="1" max="20" style="width: 100%; padding: 8px; background: #2d2d2e; border: 1px solid #444; border-radius: 4px; color: white;">
+        </div>
+        <div style="flex: 1;">
+          <label style="font-size: 12px; color: #888; display: block; margin-bottom: 5px;">Vacuum (Å)</label>
+          <input type="number" id="slab-vacuum" value="10" min="0" max="50" step="0.5" style="width: 100%; padding: 8px; background: #2d2d2e; border: 1px solid #444; border-radius: 4px; color: white;">
+        </div>
+      </div>
+      <div style="margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 12px; color: #888;">Center slab</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="slab-center" checked>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div style="margin-bottom: 15px; display: flex; gap: 5px;">
+        <button id="btn-slab-preset-001" class="action-btn" style="flex: 1; font-size: 11px;">(001)</button>
+        <button id="btn-slab-preset-100" class="action-btn" style="flex: 1; font-size: 11px;">(100)</button>
+        <button id="btn-slab-preset-110" class="action-btn" style="flex: 1; font-size: 11px;">(110)</button>
+        <button id="btn-slab-preset-111" class="action-btn" style="flex: 1; font-size: 11px;">(111)</button>
+      </div>
+      <div style="display: flex; gap: 10px;">
+        <button id="btn-slab-apply" class="action-btn primary-btn" style="flex: 1;">Generate</button>
+        <button id="btn-slab-cancel" class="action-btn" style="flex: 1; background: #ff4444;">Cancel</button>
+      </div>
     </div>
 
     <!-- JSME Editor Modal -->

@@ -51,6 +51,15 @@ Select atoms for operations.
   - `select 0 1 2`
   - `select 0:5`
   - `select :` (Select all)
+- `select frag <index>`: Select all atoms in a fragment.
+  - `select frag 0` (Select fragment 0)
+- `select element <El> [El2 ...]`: Select atoms by element.
+  - `select element C` (Select all carbon atoms)
+  - `select element C H` (Select all carbon and hydrogen atoms)
+- `select layer <N|N:M|top|bottom>`: Select atoms by layer (z-coordinate or fractional z for crystals).
+  - `select layer 0` (Select bottom layer)
+  - `select layer top` (Select top layer)
+  - `select layer 0:2` (Select layers 0 through 2)
 
 ### `clear` (`cls`)
 Clear the console output.
@@ -80,9 +89,11 @@ Move the molecule's center of mass to the origin (0,0,0).
 - `center`
 
 ### `rotate` (`rot`)
-Rotate the molecule around the origin.
-- `rotate <x> <y> <z>`: Rotate by degrees.
-  - `rotate 90 0 0` (Rotate 90° around X-axis)
+Rotate fragments or molecules around their center.
+- `rot mol <x> <y> <z>`: Rotate the entire molecule by degrees.
+  - `rot mol 90 0 0` (Rotate molecule 90° around X-axis)
+- `rot frag <index> <x> <y> <z>`: Rotate a fragment by degrees around its centroid.
+  - `rot frag 1 90 0 0` (Rotate fragment 1 by 90° around X-axis)
 
 ### `trans` (`tr`, `translation`)
 Translate the molecule.
@@ -99,6 +110,15 @@ Set geometric properties or editor settings.
   - `set scale atom 1.5` (Increase atom size by 1.5x)
 - `set scale bond <value>`: Set bond visual scale.
   - `set scale bond 0.8` (Decrease bond thickness to 0.8x)
+
+### `mv` (`move`)
+Move atoms, fragments, or molecules.
+- `mv atom <index> <x> <y> <z>`: Move an atom by offset.
+  - `mv atom 2 0 0 3` (Move atom 2 by (0,0,3))
+- `mv frag <index> <x> <y> <z>`: Move a fragment by offset.
+  - `mv frag 1 0 0 3` (Move fragment 1 by (0,0,3))
+- `mv mol <x> <y> <z>`: Move the entire molecule by offset.
+  - `mv mol 0 0 3` (Move molecule by (0,0,3))
 
 ### `substitute` (`sub`)
 Substitute atoms or groups in the molecule.
@@ -176,6 +196,16 @@ Capture a snapshot of the viewport.
 - `capture`: Capture with background.
 - `capture -n` (or `--no-background`): Capture with transparent background.
 
+### `show`
+Show 2D or 3D visualization.
+- `show 3d`: Capture 3D viewport snapshot.
+  - `show 3d -n` (or `--no-background`): Capture with transparent background.
+- `show 2d`: Generate 2D structure diagram (SVG).
+  - `show 2d -s` (or `--split`): Show each fragment separately.
+  - `show 2d -l` (or `--label`): Show atom labels.
+  - `show 2d -h` (or `--hydrogen`): Show hydrogen atoms.
+  - `show 2d -p` (or `--png`): Export as PNG instead of SVG.
+
 ## History
 
 ### `undo`
@@ -185,6 +215,98 @@ Undo the last destructive operation.
 ### `redo`
 Redo the last undone operation.
 - `redo`
+
+## File I/O
+
+### `read`
+Read a local file (local mode only).
+- `read <filename>`: Load a file from the local filesystem.
+  - `read molecule.xyz`
+
+### `run`
+Execute commands from a local file (local mode only).
+- `run <filename>`: Run a script file containing commands.
+  - `run script.txt`
+
+### `export` (`exp`)
+Export the current molecule to various formats.
+- `export xyz`: Export as XYZ format.
+  - `export xyz -s` (or `--split`): Export each fragment separately.
+- `export smi` (or `smiles`): Export as SMILES format.
+  - `export smi -s`: Export each fragment separately.
+- `export sdf` (or `mol`): Export as SDF/MOL format.
+  - `export sdf -s`: Export each fragment separately.
+- `export cif`: Export crystal structure as CIF format.
+- `export poscar` (or `vasp`): Export crystal structure as POSCAR format.
+
+## Chemistry Tools
+
+### `addh` (`add_hydrogens`)
+Add explicit hydrogen atoms to the molecule.
+- `addh`: Add hydrogens based on valence rules.
+
+### `optimize` (`opt`, `minimize`)
+Optimize molecular geometry using force field.
+- `optimize`: Optimize using default force field method.
+- `optimize ff`: Optimize using force field (explicit).
+
+## Crystal Structure Commands
+
+### `cell`
+Show or set unit cell parameters.
+- `cell`: Display current cell parameters and lattice vectors.
+- `cell <a> <b> <c> <alpha> <beta> <gamma>`: Set new cell parameters.
+  - `cell 5.0 5.0 5.0 90 90 90` (Set cubic cell)
+
+### `supercell` (`sc`)
+Generate a supercell from the current crystal structure.
+- `supercell <na> <nb> <nc>`: Generate diagonal supercell.
+  - `supercell 2 2 2` (Generate 2×2×2 supercell)
+- `supercell <s11> <s12> <s13> <s21> <s22> <s23> <s31> <s32> <s33>`: Generate using 3×3 transformation matrix (row-major).
+  - `supercell 2 0 0 0 2 0 0 0 2` (Same as 2×2×2)
+
+### `wrap`
+Wrap atoms into the unit cell [0,1) fractional coordinates.
+- `wrap`: Wrap all atoms into the primary unit cell.
+
+### `autobond` (`ab`)
+Auto-detect and create bonds (PBC-aware for crystals).
+- `autobond`: Use default threshold (1.1).
+- `autobond <threshold>`: Use custom threshold multiplier.
+  - `autobond 1.2` (Use 1.2× covalent radii)
+
+### `ghost`
+Toggle periodic image (ghost) atoms visualization.
+- `ghost`: Toggle ghost atoms on/off.
+- `ghost on`: Show ghost atoms.
+- `ghost off`: Hide ghost atoms.
+
+### `unitcell` (`uc`)
+Toggle unit cell wireframe visualization.
+- `unitcell`: Toggle unit cell on/off.
+- `unitcell on`: Show unit cell.
+- `unitcell off`: Hide unit cell.
+
+### `slab`
+Generate a surface slab from a crystal structure.
+- `slab <h> <k> <l> [layers] [vacuum] [-no-center]`: Generate slab with Miller indices.
+  - `slab 0 0 1`: Generate (001) slab with default settings (4 layers, 10 Å vacuum).
+  - `slab 1 1 0 6 15`: Generate (110) slab with 6 layers and 15 Å vacuum.
+  - `slab 1 0 0 4 10 -no-center`: Generate (100) slab without centering.
+
+### `poly` (`polyhedra`)
+Toggle coordination polyhedra visualization.
+- `poly`: Toggle polyhedra on/off for all elements with CN≥3.
+- `poly on`: Show polyhedra.
+- `poly off`: Hide polyhedra.
+- `poly on <element> [element2 ...]`: Show polyhedra only for specific elements.
+  - `poly on Ti O` (Show polyhedra for Ti and O atoms)
+
+### `bonds`
+Toggle bond visibility.
+- `bonds`: Toggle bonds on/off.
+- `bonds on`: Show bonds.
+- `bonds off`: Hide bonds.
 
 ## Utilities
 

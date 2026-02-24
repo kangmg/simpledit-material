@@ -5,6 +5,8 @@ import { FUNCTIONAL_GROUPS, GROUP_CATEGORIES } from '../functionalGroups.js';
 import { jsmeManager } from './jsmeManager.js';
 import { oclEditorManager } from './oclEditorManager.js';
 import { rdkitManager } from './rdkitManager.js';
+import { LatticeParams } from '../crystal.js';
+import { SlabGenerator } from './slabGenerator.js';
 
 /**
  * Manages UI interactions, modals, and labels
@@ -38,6 +40,9 @@ export class UIManager {
         this.bindConsoleButton();
         this.bindSupercellButton();
         this.bindFixUnitCellToggle();
+        this.bindCrystalVisualizationToggles();
+        this.bindCellParamsButton();
+        this.bindSlabGeneratorButton();
         console.log('UIManager: Toolbar events bound');
     }
 
@@ -479,32 +484,44 @@ export class UIManager {
     }
 
     /**
-     * Bind supercell button
+     * Bind supercell button - now opens modal
      */
     bindSupercellButton() {
         const btnSupercell = document.getElementById('btn-supercell');
+        const modal = document.getElementById('supercell-modal');
+        const backdrop = document.getElementById('modal-backdrop');
+        const btnClose = document.getElementById('supercell-close');
         const btnApply = document.getElementById('btn-supercell-apply');
         const btnCancel = document.getElementById('btn-supercell-cancel');
-        const btnSimple = document.getElementById('btn-supercell-simple');
-        const controls = document.getElementById('supercell-controls');
+
+        // Preset buttons
+        const btn222 = document.getElementById('btn-sc-preset-222');
+        const btn333 = document.getElementById('btn-sc-preset-333');
+        const btnIdentity = document.getElementById('btn-sc-preset-identity');
 
         if (btnSupercell) {
             btnSupercell.onclick = () => {
-                if (controls) {
-                    controls.style.display = controls.style.display === 'none' ? 'block' : 'none';
+                if (!this.editor.molecule || !this.editor.molecule.isCrystal) {
+                    this.showError('No crystal loaded');
+                    return;
+                }
+                if (modal && backdrop) {
+                    modal.style.display = 'block';
+                    backdrop.style.display = 'block';
                 }
             };
         }
 
-        if (btnCancel) {
-            btnCancel.onclick = () => {
-                if (controls) controls.style.display = 'none';
-            };
-        }
+        const closeModal = () => {
+            if (modal) modal.style.display = 'none';
+            if (backdrop) backdrop.style.display = 'none';
+        };
 
-        if (btnSimple) {
-            btnSimple.onclick = () => {
-                // Set simple 2x2x2 matrix
+        if (btnClose) btnClose.onclick = closeModal;
+        if (btnCancel) btnCancel.onclick = closeModal;
+
+        if (btn222) {
+            btn222.onclick = () => {
                 document.getElementById('sc-s11').value = '2';
                 document.getElementById('sc-s12').value = '0';
                 document.getElementById('sc-s13').value = '0';
@@ -517,23 +534,45 @@ export class UIManager {
             };
         }
 
+        if (btn333) {
+            btn333.onclick = () => {
+                document.getElementById('sc-s11').value = '3';
+                document.getElementById('sc-s12').value = '0';
+                document.getElementById('sc-s13').value = '0';
+                document.getElementById('sc-s21').value = '0';
+                document.getElementById('sc-s22').value = '3';
+                document.getElementById('sc-s23').value = '0';
+                document.getElementById('sc-s31').value = '0';
+                document.getElementById('sc-s32').value = '0';
+                document.getElementById('sc-s33').value = '3';
+            };
+        }
+
+        if (btnIdentity) {
+            btnIdentity.onclick = () => {
+                document.getElementById('sc-s11').value = '1';
+                document.getElementById('sc-s12').value = '0';
+                document.getElementById('sc-s13').value = '0';
+                document.getElementById('sc-s21').value = '0';
+                document.getElementById('sc-s22').value = '1';
+                document.getElementById('sc-s23').value = '0';
+                document.getElementById('sc-s31').value = '0';
+                document.getElementById('sc-s32').value = '0';
+                document.getElementById('sc-s33').value = '1';
+            };
+        }
+
         if (btnApply) {
             btnApply.onclick = () => {
-                // Determine which crystal to use as the supercell base.
-                // When "Fix Unit Cell" is ON, always use the stored original
-                // unit cell (editor.unitCellBase) instead of the current
-                // (potentially already-expanded) structure.
                 const chkFix = document.getElementById('chk-fix-unitcell');
-                const useBase = chkFix && chkFix.checked &&
-                                this.editor.unitCellBase &&
-                                this.editor.unitCellBase.isCrystal;
+                const useBase = chkFix && chkFix.checked && this.editor.unitCellBase && this.editor.unitCellBase.isCrystal;
                 const mol = useBase ? this.editor.unitCellBase : this.editor.molecule;
+                
                 if (!mol || !mol.isCrystal) {
-                    this.showError('No crystal loaded. Import a CIF or POSCAR file first.');
+                    this.showError('No crystal loaded');
                     return;
                 }
 
-                // Read matrix values
                 const s11 = parseInt(document.getElementById('sc-s11').value) || 0;
                 const s12 = parseInt(document.getElementById('sc-s12').value) || 0;
                 const s13 = parseInt(document.getElementById('sc-s13').value) || 0;
@@ -544,21 +583,10 @@ export class UIManager {
                 const s32 = parseInt(document.getElementById('sc-s32').value) || 0;
                 const s33 = parseInt(document.getElementById('sc-s33').value) || 0;
 
-                const S = [
-                    [s11, s12, s13],
-                    [s21, s22, s23],
-                    [s31, s32, s33]
-               ];
+                const S = [[s11, s12, s13], [s21, s22, s23], [s31, s32, s33]];
 
-                // Validate matrix
-                if (S.some(row => row.some(val => isNaN(val) || val < 0))) {
-                    this.showError('Invalid matrix values. All values must be non-negative integers.');
-                    return;
-                }
-
-                // Check if any diagonal element is zero
                 if (s11 === 0 || s22 === 0 || s33 === 0) {
-                    this.showError('Diagonal elements (s11, s22, s33) must be at least 1.');
+                    this.showError('Diagonal elements must be at least 1');
                     return;
                 }
 
@@ -569,14 +597,244 @@ export class UIManager {
                     this.editor.rebuildScene();
                     this.editor.saveState();
 
-                    // Calculate determinant for display
                     const det = s11*(s22*s33 - s23*s32) - s12*(s21*s33 - s23*s31) + s13*(s21*s32 - s22*s31);
                     this.showSuccess(`Generated ${det}x supercell: ${sc.atoms.length} atoms`);
-
-                    // Hide controls
-                    if (controls) controls.style.display = 'none';
+                    closeModal();
                 } catch (e) {
-                    this.showError('Failed to generate supercell: ' + e.message);
+                    this.showError('Failed: ' + e.message);
+                }
+            };
+        }
+    }
+
+    bindCellParamsButton() {
+        const btn = document.getElementById('btn-cell-params');
+        const modal = document.getElementById('cell-modal');
+        const backdrop = document.getElementById('modal-backdrop');
+        const btnClose = document.getElementById('cell-close');
+        const btnApply = document.getElementById('btn-cell-apply');
+        const btnCancel = document.getElementById('btn-cell-cancel');
+
+        if (btn) {
+            btn.onclick = () => {
+                const mol = this.editor.molecule;
+                if (!mol || !mol.isCrystal || !mol.lattice) {
+                    this.showError('No crystal loaded');
+                    return;
+                }
+
+                // Populate current values
+                document.getElementById('cell-a').value = mol.lattice.a.toFixed(3);
+                document.getElementById('cell-b').value = mol.lattice.b.toFixed(3);
+                document.getElementById('cell-c').value = mol.lattice.c.toFixed(3);
+                document.getElementById('cell-alpha').value = mol.lattice.alpha.toFixed(2);
+                document.getElementById('cell-beta').value = mol.lattice.beta.toFixed(2);
+                document.getElementById('cell-gamma').value = mol.lattice.gamma.toFixed(2);
+
+                if (modal && backdrop) {
+                    modal.style.display = 'block';
+                    backdrop.style.display = 'block';
+                }
+            };
+        }
+
+        const closeModal = () => {
+            if (modal) modal.style.display = 'none';
+            if (backdrop) backdrop.style.display = 'none';
+        };
+
+        if (btnClose) btnClose.onclick = closeModal;
+        if (btnCancel) btnCancel.onclick = closeModal;
+
+        if (btnApply) {
+            btnApply.onclick = () => {
+                const mol = this.editor.molecule;
+                if (!mol || !mol.isCrystal) return;
+
+                const a = parseFloat(document.getElementById('cell-a').value);
+                const b = parseFloat(document.getElementById('cell-b').value);
+                const c = parseFloat(document.getElementById('cell-c').value);
+                const alpha = parseFloat(document.getElementById('cell-alpha').value);
+                const beta = parseFloat(document.getElementById('cell-beta').value);
+                const gamma = parseFloat(document.getElementById('cell-gamma').value);
+
+                if ([a, b, c, alpha, beta, gamma].some(isNaN)) {
+                    this.showError('Invalid values');
+                    return;
+                }
+
+                mol.setLattice(new LatticeParams(a, b, c, alpha, beta, gamma));
+                
+                mol.atoms.forEach(atom => {
+                    const frac = mol.getFrac(atom);
+                    if (frac) {
+                        const cart = mol.lattice.fracToCart(frac.x, frac.y, frac.z);
+                        atom.position.copy(cart);
+                    }
+                });
+
+                this.editor.rebuildScene();
+                this.editor.saveState();
+                this.showSuccess(`Cell updated: a=${a.toFixed(2)} b=${b.toFixed(2)} c=${c.toFixed(2)}`);
+                closeModal();
+            };
+        }
+    }
+
+    bindSlabGeneratorButton() {
+        const btn = document.getElementById('btn-slab-generator');
+        const modal = document.getElementById('slab-modal');
+        const backdrop = document.getElementById('modal-backdrop');
+        const btnClose = document.getElementById('slab-close');
+        const btnApply = document.getElementById('btn-slab-apply');
+        const btnCancel = document.getElementById('btn-slab-cancel');
+
+        // Preset buttons
+        const btn001 = document.getElementById('btn-slab-preset-001');
+        const btn100 = document.getElementById('btn-slab-preset-100');
+        const btn110 = document.getElementById('btn-slab-preset-110');
+        const btn111 = document.getElementById('btn-slab-preset-111');
+
+        if (btn) {
+            btn.onclick = () => {
+                if (!this.editor.molecule || !this.editor.molecule.isCrystal) {
+                    this.showError('No crystal loaded');
+                    return;
+                }
+                if (modal && backdrop) {
+                    modal.style.display = 'block';
+                    backdrop.style.display = 'block';
+                }
+            };
+        }
+
+        const closeModal = () => {
+            if (modal) modal.style.display = 'none';
+            if (backdrop) backdrop.style.display = 'none';
+        };
+
+        if (btnClose) btnClose.onclick = closeModal;
+        if (btnCancel) btnCancel.onclick = closeModal;
+
+        if (btn001) {
+            btn001.onclick = () => {
+                document.getElementById('slab-h').value = '0';
+                document.getElementById('slab-k').value = '0';
+                document.getElementById('slab-l').value = '1';
+            };
+        }
+
+        if (btn100) {
+            btn100.onclick = () => {
+                document.getElementById('slab-h').value = '1';
+                document.getElementById('slab-k').value = '0';
+                document.getElementById('slab-l').value = '0';
+            };
+        }
+
+        if (btn110) {
+            btn110.onclick = () => {
+                document.getElementById('slab-h').value = '1';
+                document.getElementById('slab-k').value = '1';
+                document.getElementById('slab-l').value = '0';
+            };
+        }
+
+        if (btn111) {
+            btn111.onclick = () => {
+                document.getElementById('slab-h').value = '1';
+                document.getElementById('slab-k').value = '1';
+                document.getElementById('slab-l').value = '1';
+            };
+        }
+
+        if (btnApply) {
+            btnApply.onclick = async () => {
+                const mol = this.editor.molecule;
+                if (!mol || !mol.isCrystal) return;
+
+                const h = parseInt(document.getElementById('slab-h').value);
+                const k = parseInt(document.getElementById('slab-k').value);
+                const l = parseInt(document.getElementById('slab-l').value);
+                const layers = parseInt(document.getElementById('slab-layers').value);
+                const vacuum = parseFloat(document.getElementById('slab-vacuum').value);
+                const centered = document.getElementById('slab-center').checked;
+
+                if ([h, k, l].every(v => v === 0)) {
+                    this.showError('Miller indices cannot all be zero');
+                    return;
+                }
+
+                if (isNaN(layers) || layers < 1 || isNaN(vacuum) || vacuum < 0) {
+                    this.showError('Invalid parameters');
+                    return;
+                }
+
+                try {
+                    const slab = SlabGenerator.generate(mol, h, k, l, layers, vacuum, centered);
+                    this.editor.moleculeManager.loadCrystal(slab);
+                    this.editor.moleculeManager.autoBondPBC();
+                    this.editor.rebuildScene();
+                    this.editor.saveState();
+
+                    const info = slab._slabInfo;
+                    this.showSuccess(`Generated (${h}${k}${l}) slab: ${slab.atoms.length} atoms, d=${info.dSpacing.toFixed(3)} Å`);
+                    closeModal();
+                } catch (e) {
+                    this.showError('Failed: ' + e.message);
+                }
+            };
+        }
+    }
+
+    bindCrystalVisualizationToggles() {
+        const chkUnitCell = document.getElementById('chk-unitcell');
+        const chkGhost = document.getElementById('chk-ghost');
+        const chkPolyhedra = document.getElementById('chk-polyhedra');
+        const chkMiller = document.getElementById('chk-miller-indices');
+
+        if (chkUnitCell) {
+            chkUnitCell.onchange = () => {
+                const crm = this.editor.crystalRenderManager;
+                if (!crm) return;
+                crm.showUnitCell = chkUnitCell.checked;
+                if (chkUnitCell.checked) {
+                    crm.drawUnitCell(this.editor.molecule);
+                } else {
+                    crm.clearUnitCell();
+                }
+            };
+        }
+
+        if (chkGhost) {
+            chkGhost.onchange = () => {
+                const crm = this.editor.crystalRenderManager;
+                if (!crm) return;
+                crm.setGhostAtomsVisible(chkGhost.checked);
+                if (chkGhost.checked) {
+                    crm.drawGhostAtoms(this.editor.molecule, this.editor.renderManager);
+                }
+            };
+        }
+
+        if (chkPolyhedra) {
+            chkPolyhedra.onchange = () => {
+                const crm = this.editor.crystalRenderManager;
+                if (!crm) return;
+                crm.setPolyhedra(chkPolyhedra.checked);
+                if (chkPolyhedra.checked) {
+                    crm.drawPolyhedra(this.editor.molecule, this.editor.renderManager);
+                }
+            };
+        }
+
+        if (chkMiller) {
+            chkMiller.onchange = () => {
+                const crm = this.editor.crystalRenderManager;
+                if (!crm) return;
+                crm.setMillerIndices(chkMiller.checked);
+                if (chkMiller.checked) {
+                    crm.drawMillerIndices(this.editor.molecule);
                 }
             };
         }
