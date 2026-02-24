@@ -129,7 +129,7 @@ export class CrystalRenderManager {
 
     /**
      * Render ghost atoms and bonds based on PBC connectivity.
-     * Only draws atoms that are bonded to atoms in the home cell.
+     * Shows atoms in neighboring cells that can bond with home cell atoms.
      * @param {import('../crystal.js').Crystal} crystal
      * @param {import('./renderManager.js').RenderManager} renderManager
      */
@@ -138,14 +138,19 @@ export class CrystalRenderManager {
         if (!crystal || !crystal.lattice || !this.showGhosts) return;
 
         const { a, b, c } = crystal.lattice.toLatticeVectors();
-        const drawnGhosts = new Set(); // Track drawn ghost atoms to avoid duplicates
+        const drawnGhosts = new Map(); // Track drawn ghost atoms: key -> {mesh, position}
+        const bondThreshold = 1.2; // Multiplier for covalent radii sum
 
-        // For each atom in home cell, check its bonds
+        // For each atom in home cell
         crystal.atoms.forEach(homeAtom => {
-            homeAtom.bonds.forEach(bond => {
-                const otherAtom = bond.atom1 === homeAtom ? bond.atom2 : bond.atom1;
+            const homeRadius = renderManager.getElementRadius(homeAtom.element);
+            
+            // Check all atoms for potential periodic bonds
+            crystal.atoms.forEach(otherAtom => {
+                const otherRadius = renderManager.getElementRadius(otherAtom.element);
+                const maxBondDist = (homeRadius + otherRadius) * bondThreshold;
                 
-                // Check all neighboring cells for periodic images
+                // Check all neighboring cells
                 for (let ia = -1; ia <= 1; ia++) {
                     for (let ib = -1; ib <= 1; ib++) {
                         for (let ic = -1; ic <= 1; ic++) {
@@ -159,14 +164,14 @@ export class CrystalRenderManager {
                             const ghostPos = otherAtom.position.clone().add(offset);
                             const dist = homeAtom.position.distanceTo(ghostPos);
                             
-                            // If this ghost position is within bonding distance
-                            if (dist < bond.atom1.position.distanceTo(bond.atom2.position) * 1.5) {
+                            // If within bonding distance
+                            if (dist < maxBondDist) {
                                 const ghostKey = `${otherAtom.id}_${ia}_${ib}_${ic}`;
                                 
+                                // Draw ghost atom if not already drawn
                                 if (!drawnGhosts.has(ghostKey)) {
-                                    // Draw ghost atom
                                     const color = renderManager.getElementColor(otherAtom.element);
-                                    const radius = renderManager.getElementRadius(otherAtom.element) * 0.6;
+                                    const radius = otherRadius * 0.6;
                                     
                                     const geo = new THREE.SphereGeometry(radius, 8, 8);
                                     const mat = new THREE.MeshPhongMaterial({
@@ -180,7 +185,7 @@ export class CrystalRenderManager {
                                     mesh.userData = { type: 'ghostAtom', key: ghostKey };
                                     this.scene.add(mesh);
                                     this.ghostMeshes.push(mesh);
-                                    drawnGhosts.add(ghostKey);
+                                    drawnGhosts.set(ghostKey, { mesh, position: ghostPos });
                                 }
                                 
                                 // Draw bond between home atom and ghost
