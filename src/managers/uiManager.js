@@ -37,6 +37,7 @@ export class UIManager {
         this.bindBondsVisibleToggle();
         this.bindConsoleButton();
         this.bindSupercellButton();
+        this.bindFixUnitCellToggle();
         console.log('UIManager: Toolbar events bound');
     }
 
@@ -456,6 +457,28 @@ export class UIManager {
     }
 
     /**
+     * Bind Fix Unit Cell toggle.
+     * When turned ON, captures the current crystal as the base for subsequent
+     * supercell operations. When OFF, supercell will use the current molecule.
+     */
+    bindFixUnitCellToggle() {
+        const chk = document.getElementById('chk-fix-unitcell');
+        if (!chk) return;
+        chk.onchange = () => {
+            if (chk.checked) {
+                const mol = this.editor.molecule;
+                if (mol && mol.isCrystal) {
+                    this.editor.unitCellBase = mol;
+                    this.showSuccess('Unit cell fixed: ' + mol.name);
+                } else {
+                    this.showError('No crystal loaded to fix.');
+                    chk.checked = false;
+                }
+            }
+        };
+    }
+
+    /**
      * Bind supercell button
      */
     bindSupercellButton() {
@@ -496,7 +519,15 @@ export class UIManager {
 
         if (btnApply) {
             btnApply.onclick = () => {
-                const mol = this.editor.molecule;
+                // Determine which crystal to use as the supercell base.
+                // When "Fix Unit Cell" is ON, always use the stored original
+                // unit cell (editor.unitCellBase) instead of the current
+                // (potentially already-expanded) structure.
+                const chkFix = document.getElementById('chk-fix-unitcell');
+                const useBase = chkFix && chkFix.checked &&
+                                this.editor.unitCellBase &&
+                                this.editor.unitCellBase.isCrystal;
+                const mol = useBase ? this.editor.unitCellBase : this.editor.molecule;
                 if (!mol || !mol.isCrystal) {
                     this.showError('No crystal loaded. Import a CIF or POSCAR file first.');
                     return;

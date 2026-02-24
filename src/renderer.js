@@ -12,10 +12,12 @@ export class Renderer {
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0xffffff);
 
-    this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 5000);
     this.camera.position.z = 10;
 
     // Orthographic Camera
+    // near is set to a large negative value so that atoms rotated "behind" the
+    // camera position are not clipped — the standard fix for molecular viewers.
     const aspect = window.innerWidth / window.innerHeight;
     const frustumSize = 20;
     this.orthoCamera = new THREE.OrthographicCamera(
@@ -23,8 +25,8 @@ export class Renderer {
       frustumSize * aspect / 2,
       frustumSize / 2,
       frustumSize / -2,
-      0.1,
-      1000
+      -2000,
+      5000
     );
     this.orthoCamera.position.z = 10;
 
@@ -212,10 +214,12 @@ export class Renderer {
 
     // Update Orthographic
     const frustumSize = 20;
-    this.orthoCamera.left = -frustumSize * aspect / 2;
-    this.orthoCamera.right = frustumSize * aspect / 2;
-    this.orthoCamera.top = frustumSize / 2;
+    this.orthoCamera.left   = -frustumSize * aspect / 2;
+    this.orthoCamera.right  =  frustumSize * aspect / 2;
+    this.orthoCamera.top    =  frustumSize / 2;
     this.orthoCamera.bottom = -frustumSize / 2;
+    this.orthoCamera.near   = -2000;
+    this.orthoCamera.far    =  5000;
     this.orthoCamera.updateProjectionMatrix();
 
     this.renderer.setSize(window.innerWidth, window.innerHeight);

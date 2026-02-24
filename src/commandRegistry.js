@@ -1140,7 +1140,13 @@ export class CommandRegistry {
                 return { error: 'Usage:\n  supercell <na> <nb> <nc>  (e.g. supercell 2 2 2)\n  supercell <s11> <s12> <s13> <s21> <s22> <s23> <s31> <s32> <s33>  (3×3 matrix, row-major)' };
             }
 
-            const mol = this.editor.molecule;
+            // Respect the "Fix Unit Cell" toggle: use the stored original
+            // unit cell when the toggle is ON.
+            const chkFix = document.getElementById('chk-fix-unitcell');
+            const useBase = chkFix && chkFix.checked &&
+                            this.editor.unitCellBase &&
+                            this.editor.unitCellBase.isCrystal;
+            const mol = useBase ? this.editor.unitCellBase : this.editor.molecule;
             if (!mol || !mol.isCrystal) return { error: 'No crystal loaded' };
 
             let S;
