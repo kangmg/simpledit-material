@@ -367,8 +367,19 @@
                     <a href="#molecules" class="nav-link">Molecules</a>
                     <a href="#clipboard" class="nav-link">Clipboard</a>
                     <a href="#visualization" class="nav-link">Visualization</a>
+                    <a href="#export" class="nav-link">Export</a>
                     <a href="#history" class="nav-link">History</a>
                     <a href="#utilities" class="nav-link">Utilities</a>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">Crystal / Solid-State</div>
+                    <a href="#crystal-overview" class="nav-link">Overview</a>
+                    <a href="#crystal-cell" class="nav-link">Unit Cell</a>
+                    <a href="#crystal-supercell" class="nav-link">Supercell</a>
+                    <a href="#crystal-slab" class="nav-link">Surface Slab</a>
+                    <a href="#crystal-poly" class="nav-link">Polyhedra</a>
+                    <a href="#crystal-utils" class="nav-link">Crystal Utilities</a>
                 </div>
 
                 <div class="nav-section">
@@ -578,21 +589,73 @@ EOF</code></pre>
 <span class="command">a atom</span> O 0 0 1.5              <span class="comment"># Using alias</span></code></pre>
 
                 <h3><code>add mol</code></h3>
-                <p>Import molecular data using heredoc syntax.</p>
-                <pre><code><span class="command">add mol xyz</span> &lt;&lt;EOF
+                <p>Import molecular or crystal data using heredoc syntax. Supported formats: <code>xyz</code>, <code>smi</code>, <code>sdf</code>, <code>mol</code>, <code>cif</code>, <code>poscar</code>.</p>
+                <pre><code><span class="comment"># XYZ molecule</span>
+<span class="command">add mol xyz</span> &lt;&lt;EOF
 3
 Methane
 C  0.000  0.000  0.000
 H  0.629  0.629  0.629
 H -0.629 -0.629  0.629
+EOF
+
+<span class="comment"># CIF crystal structure</span>
+<span class="command">add mol cif</span> &lt;&lt;EOF
+data_NaCl
+_cell_length_a   5.6402
+_cell_length_b   5.6402
+_cell_length_c   5.6402
+_cell_angle_alpha 90
+_cell_angle_beta  90
+_cell_angle_gamma 90
+_symmetry_space_group_name_H-M 'F m -3 m'
+loop_
+ _atom_site_label
+ _atom_site_type_symbol
+ _atom_site_fract_x
+ _atom_site_fract_y
+ _atom_site_fract_z
+Na Na 0.0 0.0 0.0
+Cl Cl 0.5 0.0 0.0
+EOF
+
+<span class="comment"># POSCAR / VASP structure</span>
+<span class="command">add mol poscar</span> &lt;&lt;EOF
+BCC Fe
+1.0
+2.87 0.00 0.00
+0.00 2.87 0.00
+0.00 0.00 2.87
+Fe
+2
+Direct
+0.0 0.0 0.0
+0.5 0.5 0.5
 EOF</code></pre>
+                <div class="alert alert-tip">
+                    Uploading a <code>.cif</code> or <code>.vasp</code>/<code>.poscar</code> file via the file-open button also works and automatically selects the correct parser.
+                </div>
 
                 <h3><code>select</code> <span class="badge badge-alias">sel</span></h3>
-                <p>Select atoms for operations.</p>
-                <pre><code><span class="command">select</span> 0 1 2                 <span class="comment"># Select specific atoms</span>
+                <p>Select atoms for operations. Supports index, range, fragment, element, and layer modes.</p>
+                <pre><code><span class="comment"># Basic selection</span>
+<span class="command">select</span> 0 1 2                 <span class="comment"># Select specific atoms</span>
 <span class="command">select</span> 0:5                   <span class="comment"># Select range 0-5</span>
 <span class="command">select</span> :                     <span class="comment"># Select all atoms</span>
-<span class="command">sel</span> 0 3 5                    <span class="comment"># Using alias</span></code></pre>
+<span class="command">sel</span> 0 3 5                    <span class="comment"># Using alias</span>
+
+<span class="comment"># Fragment selection</span>
+<span class="command">select</span> frag 0                <span class="comment"># Select all atoms in fragment 0</span>
+
+<span class="comment"># Element selection (crystal-friendly)</span>
+<span class="command">select</span> element Fe            <span class="comment"># Select all Fe atoms</span>
+<span class="command">select</span> element Na Cl         <span class="comment"># Select Na and Cl atoms</span>
+
+<span class="comment"># Layer selection (z-coordinate based, useful for slabs)</span>
+<span class="command">select</span> layer 0               <span class="comment"># Select bottom layer (layer 0)</span>
+<span class="command">select</span> layer top             <span class="comment"># Select topmost layer</span>
+<span class="command">select</span> layer bottom          <span class="comment"># Select bottommost layer</span>
+<span class="command">select</span> layer 0:2             <span class="comment"># Select layers 0, 1, 2</span></code></pre>
 
                 <h3><code>del atom</code> <span class="badge badge-alias">delete, rm, remove</span></h3>
                 <p>Delete atoms by index.</p>
@@ -806,6 +869,23 @@ EOF</code></pre>
 <span class="command">capture</span> --no-background      <span class="comment"># Transparent background</span>
 <span class="command">capture</span> -n                   <span class="comment"># Short flag form</span>
 <span class="command">cap</span>                           <span class="comment"># Using alias</span></code></pre>
+            </section>
+
+            <section id="export">
+                <h2>Export</h2>
+
+                <h3><code>export</code> <span class="badge badge-alias">exp</span></h3>
+                <p>Export the active structure to various formats. Prints the result to the console.</p>
+                <pre><code><span class="command">export</span> xyz                   <span class="comment"># Export as XYZ</span>
+<span class="command">export</span> smi                   <span class="comment"># Export as SMILES</span>
+<span class="command">export</span> sdf                   <span class="comment"># Export as SDF / Molfile</span>
+<span class="command">export</span> cif                   <span class="comment"># Export crystal as CIF</span>
+<span class="command">export</span> poscar                <span class="comment"># Export crystal as POSCAR (VASP)</span>
+<span class="command">exp</span> xyz -s                   <span class="comment"># Export with split fragments</span></code></pre>
+                <div class="alert alert-info">
+                    <strong>Note:</strong> <code>cif</code> and <code>poscar</code> formats require a crystal structure to be loaded (via a CIF or POSCAR file, or the <code>cell</code> command).
+                    The <strong>Atomic Coordinate Editor</strong> (toolbar button) also supports CIF format for copy-paste workflows.
+                </div>
             </section>
 
             <section id="history">
@@ -1181,6 +1261,235 @@ EOF
                 <pre><code><span class="command">help</span> add                     <span class="comment"># View command help</span>
 <span class="comment"># Use explicit subcommands:</span>
 <span class="command">add atom</span> C 0 0 0              <span class="comment"># Not just 'add C 0 0 0'</span></code></pre>
+            </section>
+
+            <!-- Crystal / Solid-State Section -->
+            <section id="crystal-overview">
+                <h2>Crystal / Solid-State Structures</h2>
+
+                <p>Simpledit Material extends the molecular editor with full periodic boundary condition (PBC) support for crystal and solid-state structures. Load a <code>.cif</code> or POSCAR file to activate crystal mode.</p>
+
+                <div class="alert alert-info">
+                    <strong>Crystal Mode:</strong> Crystal-specific commands (<code>cell</code>, <code>supercell</code>, <code>slab</code>, <code>poly</code>, etc.) are only available after a crystal structure is loaded. Use <code>add mol cif</code> heredoc or drag-and-drop a <code>.cif</code> file.
+                </div>
+
+                <h3>Supported File Formats</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Format</th>
+                            <th>Import</th>
+                            <th>Export</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>CIF</code></td>
+                            <td>✓</td>
+                            <td>✓</td>
+                            <td>Crystallographic Information File (most databases)</td>
+                        </tr>
+                        <tr>
+                            <td><code>POSCAR</code></td>
+                            <td>✓</td>
+                            <td>✓</td>
+                            <td>VASP structure format</td>
+                        </tr>
+                        <tr>
+                            <td><code>XYZ</code></td>
+                            <td>✓</td>
+                            <td>✓</td>
+                            <td>Cartesian coordinates (non-periodic)</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>Quick Start</h3>
+                <pre><code><span class="comment"># 1. Load a crystal</span>
+<span class="command">add mol cif</span> &lt;&lt;EOF
+<span class="comment">... paste CIF content ...</span>
+EOF
+
+<span class="comment"># 2. Check the unit cell</span>
+<span class="command">cell</span>
+
+<span class="comment"># 3. Visualize</span>
+<span class="command">unitcell</span> on
+<span class="command">ghost</span> on
+
+<span class="comment"># 4. Build a supercell</span>
+<span class="command">supercell</span> 2 2 2
+
+<span class="comment"># 5. Generate a surface</span>
+<span class="command">slab</span> 0 0 1 4 10</code></pre>
+            </section>
+
+            <section id="crystal-cell">
+                <h2>Unit Cell</h2>
+
+                <h3><code>cell</code></h3>
+                <p>Show or set unit cell lattice parameters.</p>
+                <pre><code><span class="command">cell</span>                          <span class="comment"># Show current cell (a, b, c, α, β, γ, volume, space group)</span>
+<span class="command">cell</span> 5.64 5.64 5.64 90 90 90  <span class="comment"># Set cubic cell (NaCl)</span>
+<span class="command">cell</span> 2.87 2.87 2.87 90 90 90  <span class="comment"># Set BCC Fe unit cell</span></code></pre>
+                <div class="alert alert-tip">
+                    After changing cell parameters, atom positions are recalculated from stored fractional coordinates.
+                </div>
+
+                <h3><code>unitcell</code> <span class="badge badge-alias">uc</span></h3>
+                <p>Toggle the unit cell wireframe overlay.</p>
+                <pre><code><span class="command">unitcell</span>                      <span class="comment"># Toggle</span>
+<span class="command">unitcell</span> on                   <span class="comment"># Show wireframe</span>
+<span class="command">unitcell</span> off                  <span class="comment"># Hide wireframe</span>
+<span class="command">uc</span> on                         <span class="comment"># Using alias</span></code></pre>
+
+                <h3><code>ghost</code></h3>
+                <p>Toggle periodic image (ghost) atoms that show atoms from neighboring cells at the cell boundary.</p>
+                <pre><code><span class="command">ghost</span>                         <span class="comment"># Toggle</span>
+<span class="command">ghost</span> on                      <span class="comment"># Show ghost atoms</span>
+<span class="command">ghost</span> off                     <span class="comment"># Hide ghost atoms</span></code></pre>
+
+                <h3><code>wrap</code></h3>
+                <p>Wrap all atoms back into the unit cell [0, 1) in fractional coordinates.</p>
+                <pre><code><span class="command">wrap</span>                          <span class="comment"># Wrap atoms into unit cell</span></code></pre>
+
+                <h3><code>autobond</code> <span class="badge badge-alias">ab</span></h3>
+                <p>Recalculate bonds with periodic boundary condition awareness.</p>
+                <pre><code><span class="command">autobond</span>                      <span class="comment"># PBC-aware auto-bond (default threshold 1.1×sum of covalent radii)</span>
+<span class="command">autobond</span> 1.2                  <span class="comment"># Custom scale factor</span>
+<span class="command">ab</span>                            <span class="comment"># Using alias</span></code></pre>
+            </section>
+
+            <section id="crystal-supercell">
+                <h2>Supercell Generation</h2>
+
+                <h3><code>supercell</code> <span class="badge badge-alias">sc</span></h3>
+                <p>Generate a supercell from the current crystal. Supports both diagonal repetition and full 3×3 transformation matrices.</p>
+
+                <h4>Diagonal (simple repetition)</h4>
+                <pre><code><span class="command">supercell</span> 2 2 2              <span class="comment"># 2×2×2 supercell</span>
+<span class="command">supercell</span> 3 3 1              <span class="comment"># 3×3×1 (slab-like)</span>
+<span class="command">sc</span> 2 2 2                     <span class="comment"># Using alias</span></code></pre>
+
+                <h4>3×3 Transformation Matrix (row-major)</h4>
+                <pre><code><span class="comment"># supercell s11 s12 s13  s21 s22 s23  s31 s32 s33</span>
+<span class="command">supercell</span> 2 0 0  0 2 0  0 0 2   <span class="comment"># Same as supercell 2 2 2</span>
+<span class="command">supercell</span> 1 1 0  -1 1 0  0 0 1  <span class="comment"># Rotated 45° supercell</span></code></pre>
+
+                <div class="alert alert-info">
+                    <strong>UI Panel:</strong> The toolbar also provides a graphical 3×3 matrix input panel for supercell generation without using the console.
+                </div>
+            </section>
+
+            <section id="crystal-slab">
+                <h2>Surface Slab Generation</h2>
+
+                <h3><code>slab</code></h3>
+                <p>Generate a surface slab model from a bulk crystal by specifying Miller indices.</p>
+                <pre><code><span class="comment"># slab &lt;h&gt; &lt;k&gt; &lt;l&gt; [layers=4] [vacuum=10] [-no-center]</span>
+<span class="command">slab</span> 0 0 1                    <span class="comment"># (001) surface, 4 layers, 10 Å vacuum (defaults)</span>
+<span class="command">slab</span> 1 1 0 6 15               <span class="comment"># (110) surface, 6 layers, 15 Å vacuum</span>
+<span class="command">slab</span> 1 1 1 4 10 -no-center    <span class="comment"># (111) without centering</span></code></pre>
+
+                <div class="alert alert-tip">
+                    <strong>Output info:</strong> The command reports d-spacing, number of atomic layers, vacuum thickness, and final cell dimensions.
+                </div>
+
+                <h3>Typical Slab Workflow</h3>
+                <pre><code><span class="comment"># 1. Load bulk crystal</span>
+<span class="command">add mol cif</span> &lt;&lt;EOF
+<span class="comment">... CIF data ...</span>
+EOF
+
+<span class="comment"># 2. Generate (001) slab, 6 layers, 12 Å vacuum</span>
+<span class="command">slab</span> 0 0 1 6 12
+
+<span class="comment"># 3. Select and inspect surface atoms</span>
+<span class="command">select</span> layer top
+<span class="command">list</span> -s
+
+<span class="comment"># 4. Delete selected surface layer</span>
+<span class="command">del atom</span> :
+
+<span class="comment"># 5. Export as POSCAR for DFT</span>
+<span class="command">export</span> poscar</code></pre>
+            </section>
+
+            <section id="crystal-poly">
+                <h2>Coordination Polyhedra</h2>
+
+                <h3><code>poly</code> <span class="badge badge-alias">polyhedra</span></h3>
+                <p>Toggle coordination polyhedra rendering. Polyhedra are drawn around atoms with coordination number ≥ 3.</p>
+                <pre><code><span class="command">poly</span>                          <span class="comment"># Toggle (all atoms with CN≥3)</span>
+<span class="command">poly</span> on                       <span class="comment"># Show all polyhedra</span>
+<span class="command">poly</span> off                      <span class="comment"># Hide polyhedra</span>
+<span class="command">poly</span> on Ti                    <span class="comment"># Show polyhedra only around Ti atoms</span>
+<span class="command">poly</span> on Si Al                 <span class="comment"># Show polyhedra around Si and Al</span>
+<span class="command">polyhedra</span> on Fe               <span class="comment"># Using full alias</span></code></pre>
+
+                <div class="alert alert-tip">
+                    Useful for visualizing oxide structures (TiO₂, SiO₂), perovskites, and other coordination-chemistry-rich materials.
+                </div>
+            </section>
+
+            <section id="crystal-utils">
+                <h2>Crystal Utilities</h2>
+
+                <h3>Element &amp; Layer Selection</h3>
+                <pre><code><span class="comment"># Select by element (useful for multi-component crystals)</span>
+<span class="command">select</span> element O              <span class="comment"># All oxygen atoms</span>
+<span class="command">select</span> element Ti O           <span class="comment"># Titanium and oxygen</span>
+
+<span class="comment"># Select by z-layer (useful after slab generation)</span>
+<span class="command">select</span> layer top              <span class="comment"># Topmost atomic layer</span>
+<span class="command">select</span> layer bottom           <span class="comment"># Bottommost atomic layer</span>
+<span class="command">select</span> layer 0               <span class="comment"># Layer index 0 (bottom)</span>
+<span class="command">select</span> layer 0:3             <span class="comment"># Layers 0–3</span></code></pre>
+
+                <h3>Coordinate Editor — CIF Format</h3>
+                <p>The <strong>Atomic Coordinate Editor</strong> (accessible from the toolbar) now supports CIF format in addition to XYZ, SMILES, SDF, and JSON. Use it to copy-paste CIF data directly in the browser.</p>
+
+                <h3>Complete Crystal Workflow Example</h3>
+                <pre><code><span class="comment"># Load NaCl from CIF</span>
+<span class="command">add mol cif</span> &lt;&lt;EOF
+data_NaCl
+_cell_length_a   5.6402
+_cell_length_b   5.6402
+_cell_length_c   5.6402
+_cell_angle_alpha 90
+_cell_angle_beta  90
+_cell_angle_gamma 90
+_symmetry_space_group_name_H-M 'F m -3 m'
+loop_
+ _atom_site_label
+ _atom_site_type_symbol
+ _atom_site_fract_x
+ _atom_site_fract_y
+ _atom_site_fract_z
+Na Na 0.0 0.0 0.0
+Cl Cl 0.5 0.0 0.0
+EOF
+
+<span class="comment"># Inspect cell</span>
+<span class="command">cell</span>
+
+<span class="comment"># Show unit cell and neighbors</span>
+<span class="command">uc</span> on
+<span class="command">ghost</span> on
+
+<span class="comment"># Make a 2×2×2 supercell</span>
+<span class="command">sc</span> 2 2 2
+
+<span class="comment"># Generate (001) surface slab</span>
+<span class="command">slab</span> 0 0 1 4 10
+
+<span class="comment"># Select and remove top Na layer</span>
+<span class="command">select</span> layer top
+<span class="command">del atom</span> :
+
+<span class="comment"># Export for DFT calculation</span>
+<span class="command">export</span> poscar</code></pre>
             </section>
 
             <section>

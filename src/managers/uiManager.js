@@ -857,12 +857,12 @@ export class UIManager {
             } else if (format === 'sdf') {
                 const sdf = await this.editor.fileIOManager.exportSDF({ splitFragments });
                 input.value = sdf || '';
+            } else if (format === 'cif') {
+                const cif = this.editor.fileIOManager.exportCIF();
+                input.value = cif || '';
             } else if (format === 'json') {
                 const json = this.editor.fileIOManager.atomsToJSON(this.editor.molecule.atoms);
                 input.value = json;
-            } else if (format === 'smi' || format === 'smiles') {
-                const smiles = this.editor.fileIOManager.exportSMILES({ splitFragments });
-                input.value = smiles || '';
             } else {
                 input.value = '';
             }
@@ -942,6 +942,16 @@ export class UIManager {
                                 this.editor.renderManager.rebuildScene();
                                 this.updateAtomCount(); // Sync UI
                                 this.showSuccess(result.success || 'Updated SDF');
+                                this.closeCoordinateEditor();
+                            }
+                        } else if (format === 'cif') {
+                            const result = this.editor.fileIOManager.importCIF(text);
+                            if (result.error) {
+                                this.showError(result.error);
+                            } else {
+                                this.editor.renderManager.rebuildScene();
+                                this.updateAtomCount();
+                                this.showSuccess(result.success || 'Updated CIF');
                                 this.closeCoordinateEditor();
                             }
                         }
