@@ -647,35 +647,6 @@ export class UIManager {
         if (btnClose) btnClose.onclick = closeModal;
         if (btnCancel) btnCancel.onclick = closeModal;
 
-        // Bind stepper buttons with hover effects
-        document.querySelectorAll('.stepper-btn').forEach(btn => {
-            const isMinus = btn.classList.contains('stepper-minus');
-            
-            btn.onmouseenter = () => {
-                btn.style.transform = 'scale(1.05)';
-                btn.style.boxShadow = '0 4px 8px rgba(0,0,0,0.3)';
-            };
-            btn.onmouseleave = () => {
-                btn.style.transform = 'scale(1)';
-                btn.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
-            };
-            btn.onmousedown = () => {
-                btn.style.transform = 'scale(0.95)';
-            };
-            btn.onmouseup = () => {
-                btn.style.transform = 'scale(1.05)';
-            };
-            btn.onclick = () => {
-                const targetId = btn.dataset.target;
-                const step = parseFloat(btn.dataset.step);
-                const input = document.getElementById(targetId);
-                if (input) {
-                    const currentValue = parseFloat(input.value) || 0;
-                    input.value = (currentValue + step).toFixed(2);
-                }
-            };
-        });
-
         if (btnApply) {
             btnApply.onclick = () => {
                 const mol = this.editor.molecule;
