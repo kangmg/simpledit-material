@@ -399,7 +399,10 @@ export class CrystalRenderManager {
 
         const texture = new THREE.CanvasTexture(canvas);
         const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
-        return new THREE.Sprite(material);
+        const sprite = new THREE.Sprite(material);
+        // Keep canvas reference so clearMillerIndices() can release it fully.
+        sprite.userData.canvas = canvas;
+        return sprite;
     }
 
     clearMillerIndices() {
@@ -407,6 +410,8 @@ export class CrystalRenderManager {
             if (sprite.material.map) sprite.material.map.dispose();
             if (sprite.material) sprite.material.dispose();
             this.scene.remove(sprite);
+            // Release the off-screen canvas held by this sprite.
+            sprite.userData.canvas = null;
         });
         this.millerLabels = [];
     }
@@ -481,14 +486,16 @@ export class CrystalRenderManager {
     addMillerPlane(h, k, l) {
         const mol = this.editor.molecule;
         if (!mol || !mol.isCrystal) return;
-        
+
         // Check if already exists
         const exists = this.activePlanes.some(p => p.h === h && p.k === k && p.l === l);
         if (exists) return;
-        
-        this.activePlanes.push({ h, k, l });
+
+        // Push to activePlanes only after confirming we have a valid crystal,
+        // so the list never contains planes that were never drawn.
         const colors = [0x4ecdc4, 0xf9ca24, 0xeb4d4b, 0x6c5ce7, 0xf0932b, 0x95e1d3];
-        const color = colors[this.activePlanes.length % colors.length];
+        const color = colors[(this.activePlanes.length) % colors.length];
+        this.activePlanes.push({ h, k, l });
         this.drawMillerPlane(mol, h, k, l, color);
     }
 

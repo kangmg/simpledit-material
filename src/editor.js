@@ -177,6 +177,17 @@ export class Editor {
         return this.moleculeManager ? (this.moleculeManager.getActive()?.molecule || null) : null;
     }
 
+    /**
+     * Set the "fixed" unit cell used as base for supercell generation.
+     * Only accepts valid Crystal objects; ignores null / non-crystal values.
+     * @param {import('./crystal.js').Crystal} crystal
+     */
+    setUnitCellBase(crystal) {
+        if (crystal && crystal.isCrystal) {
+            this.unitCellBase = crystal;
+        }
+    }
+
     bindEvents() {
         // Delegate UI events to UIManager
         this.uiManager.bindToolbarEvents();

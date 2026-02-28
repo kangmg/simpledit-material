@@ -185,7 +185,13 @@
                         class='regular pre-open'>
                         #getFrac
                       </a></li>
-                      
+
+                      <li><a
+                        href='#crystalgetfracsafe'
+                        class='regular pre-open'>
+                        #getFracSafe
+                      </a></li>
+
                       <li><a
                         href='#crystalwrapatoms'
                         class='regular pre-open'>
@@ -315,16 +321,28 @@
                         class='regular pre-open'>
                         #refresh
                       </a></li>
-                      
+
+                      <li><a
+                        href='#crystalrendermanageraddmillerplane'
+                        class='regular pre-open'>
+                        #addMillerPlane
+                      </a></li>
+
+                      <li><a
+                        href='#crystalrendermanagerclearmillerindices'
+                        class='regular pre-open'>
+                        #clearMillerIndices
+                      </a></li>
+
                     </ul>
-                  
-                  
-                  
+
+
+
                 </div>
-                
+
                 </li>
-              
-                
+
+
                 <li><a
                   href='#fileiomanager'
                   class=" toggle-sibling">
@@ -2926,9 +2944,11 @@ Adds:</p>
   
 
   <p>Add an atom using fractional coordinates.
-Also stores Cartesian position for rendering.</p>
+Also stores Cartesian position for rendering.
+Throws a <code>RangeError</code> if any coordinate is <code>NaN</code> or non-finite,
+preventing invalid geometry from entering the scene graph.</p>
 
-    <div class='pre p1 fill-light mt0'>addAtomFractional(element: any, fx: any, fy: any, fz: any)</div>
+    <div class='pre p1 fill-light mt0'>addAtomFractional(element: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>, fx: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, fy: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, fz: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>): <a href="#atom">Atom</a></div>
   
   
 
@@ -3062,6 +3082,42 @@ Also stores Cartesian position for rendering.</p>
       </div>
     </div>
   
+    <div class='border-bottom' id='crystalgetfracsafe'>
+      <div class="clearfix small pointer toggle-sibling">
+        <div class="py1 contain">
+            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
+            <span class='code strong strong truncate'>getFracSafe(atom)</span>
+        </div>
+      </div>
+      <div class="clearfix display-none toggle-target">
+        <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  <p>Return fractional coordinates for an atom, falling back to computing them
+from the stored Cartesian position via <code>lattice.cartToFrac()</code> when the
+<code>fracCoords</code> cache has no entry.
+Unlike <code>getFrac()</code>, this method always returns a valid coordinate object
+and never returns <code>null</code>.</p>
+
+    <div class='pre p1 fill-light mt0'>getFracSafe(atom: <a href="#atom">Atom</a>): {x: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, y: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, z: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>}</div>
+
+    <div class='py1 quiet mt1 prose-big'>Parameters</div>
+    <div class='prose'>
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>atom</span> <code class='quiet'>(<a href="#atom">Atom</a>)</code>
+            Atom whose fractional coordinates are requested.
+          </div>
+        </div>
+    </div>
+
+    <div class='py1 quiet mt1 prose-big'>Returns</div>
+    <code>{x: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, y: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, z: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>}</code>:
+    Fractional coordinate triple. Always valid; never <code>null</code>.
+
+</section>
+      </div>
+    </div>
+
     <div class='border-bottom' id='crystalwrapatoms'>
       <div class="clearfix small pointer toggle-sibling">
         <div class="py1 contain">
@@ -4245,6 +4301,62 @@ convention so that face-sharing polyhedra across PBC look correct.</p>
       </div>
     </div>
   
+    <div class='border-bottom' id='crystalrendermanageraddmillerplane'>
+      <div class="clearfix small pointer toggle-sibling">
+        <div class="py1 contain">
+            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
+            <span class='code strong strong truncate'>addMillerPlane(h, k, l)</span>
+        </div>
+      </div>
+      <div class="clearfix display-none toggle-target">
+        <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  <p>Draw a semi-transparent Miller plane for the given (<em>hkl</em>) indices and
+register it in <code>activePlanes</code>.  If a plane with identical indices already
+exists it is silently ignored (no duplicates).  The plane colour is chosen
+automatically from a fixed palette based on the current number of active
+planes before the new entry is added, keeping the colour assignment
+consistent even if planes are added in different orders.</p>
+
+    <div class='pre p1 fill-light mt0'>addMillerPlane(h: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, k: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, l: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>): void</div>
+
+    <div class='py1 quiet mt1 prose-big'>Parameters</div>
+    <div class='prose'>
+        <div class='space-bottom0'>
+          <div><span class='code bold'>h</span> <code class='quiet'>(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>)</code> Miller index h</div>
+        </div>
+        <div class='space-bottom0'>
+          <div><span class='code bold'>k</span> <code class='quiet'>(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>)</code> Miller index k</div>
+        </div>
+        <div class='space-bottom0'>
+          <div><span class='code bold'>l</span> <code class='quiet'>(<a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>)</code> Miller index l</div>
+        </div>
+    </div>
+
+</section>
+      </div>
+    </div>
+
+    <div class='border-bottom' id='crystalrendermanagerclearmillerindices'>
+      <div class="clearfix small pointer toggle-sibling">
+        <div class="py1 contain">
+            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
+            <span class='code strong strong truncate'>clearMillerIndices()</span>
+        </div>
+      </div>
+      <div class="clearfix display-none toggle-target">
+        <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  <p>Remove all Miller-index label sprites from the scene and release their
+GPU and CPU resources (texture, material, and the off-screen canvas).
+Call this before hiding Miller labels or before destroying the renderer.</p>
+
+    <div class='pre p1 fill-light mt0'>clearMillerIndices(): void</div>
+
+</section>
+      </div>
+    </div>
+
     <div class='border-bottom' id='crystalrendermanagerrefresh'>
       <div class="clearfix small pointer toggle-sibling">
         <div class="py1 contain">
@@ -4255,7 +4367,7 @@ convention so that face-sharing polyhedra across PBC look correct.</p>
       <div class="clearfix display-none toggle-target">
         <section class='p2 mb2 clearfix bg-white minishadow'>
 
-  
+
 
   <p>Redraw all crystal-specific overlays for the current active molecule.
 Should be called after rebuildScene().</p>
@@ -11811,9 +11923,14 @@ satisfying h·n1 + k·n2 + l·n3 = 0</li>
 
   
 
-  <p>Generate a surface slab.</p>
+  <p>Generate a surface slab from a bulk crystal by cleaving along the (<em>hkl</em>)
+plane.  The method constructs a new orthorhombic-like unit cell whose
+<em>c</em> axis is perpendicular to the surface, stacks the requested number of
+atomic layers, and adds a vacuum region.  The slab cell matrix is checked
+for singularity before inversion; degenerate in-plane vectors raise an
+explicit <code>Error</code> rather than producing silently wrong coordinates.</p>
 
-    <div class='pre p1 fill-light mt0'>generate(crystal: any, h: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, k: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, l: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, layers: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, vacuum: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, centered: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>): <a href="#crystal">Crystal</a></div>
+    <div class='pre p1 fill-light mt0'>generate(crystal: <a href="#crystal">Crystal</a>, h: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, k: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, l: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, layers: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, vacuum: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, centered: <a href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>): <a href="#crystal">Crystal</a></div>
   
   
 

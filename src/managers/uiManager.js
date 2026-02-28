@@ -474,7 +474,7 @@ export class UIManager {
             if (chk.checked) {
                 const mol = this.editor.molecule;
                 if (mol && mol.isCrystal) {
-                    this.editor.unitCellBase = mol;
+                    this.editor.setUnitCellBase(mol);
                     this.showSuccess('Unit cell fixed: ' + mol.name);
                 } else {
                     this.showError('No crystal loaded to fix.');

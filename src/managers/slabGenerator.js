@@ -112,13 +112,7 @@ export class SlabGenerator {
 
         const allAtoms = [];
         crystal.atoms.forEach(atom => {
-            let frac = crystal.getFrac(atom);
-            if (!frac) {
-                const f = crystal.lattice.cartToFrac(
-                    atom.position.x, atom.position.y, atom.position.z
-                );
-                frac = { x: f.x, y: f.y, z: f.z };
-            }
+            const frac = crystal.getFracSafe(atom);
             const fx = ((frac.x % 1) + 1) % 1;
             const fy = ((frac.y % 1) + 1) % 1;
             const fz = ((frac.z % 1) + 1) % 1;
@@ -178,7 +172,11 @@ export class SlabGenerator {
             new_a.y, new_b.y, new_c.y,
             new_a.z, new_b.z, new_c.z
         );
-        const M_inv = M.clone().invert();
+        const M_inv = M.clone();
+        if (M.determinant() === 0) {
+            throw new Error('Slab cell matrix is singular (degenerate in-plane vectors)');
+        }
+        M_inv.invert();
 
         // ── Convert to fractional coords in slab cell; wrap & deduplicate ───
         const EPS_frac = 2e-4;

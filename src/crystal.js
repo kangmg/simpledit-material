@@ -39,8 +39,12 @@ export class LatticeParams {
         const va = new THREE.Vector3(a, 0, 0);
         const vb = new THREE.Vector3(b * Math.cos(ga), b * Math.sin(ga), 0);
 
+        const sinGa = Math.sin(ga);
+        if (Math.abs(sinGa) < 1e-10) {
+            throw new Error(`Degenerate lattice: gamma = ${this.gamma}° (sin γ ≈ 0)`);
+        }
         const cx = c * Math.cos(be);
-        const cy = c * (Math.cos(al) - Math.cos(be) * Math.cos(ga)) / Math.sin(ga);
+        const cy = c * (Math.cos(al) - Math.cos(be) * Math.cos(ga)) / sinGa;
         const czSq = c * c - cx * cx - cy * cy;
         const cz = czSq > 1e-12 ? Math.sqrt(czSq) : 0;
         const vc = new THREE.Vector3(cx, cy, cz);
@@ -79,7 +83,11 @@ export class LatticeParams {
             a.y, b.y, c.y,
             a.z, b.z, c.z
         );
-        return new THREE.Vector3(x, y, z).applyMatrix3(M.clone().invert());
+        const Minv = M.clone();
+        if (Minv.determinant() === 0) {
+            throw new Error('Singular lattice matrix: cannot convert Cartesian to fractional');
+        }
+        return new THREE.Vector3(x, y, z).applyMatrix3(Minv.invert());
     }
 
     /** Unit cell volume in Å³ */
@@ -171,6 +179,9 @@ export class Crystal extends Molecule {
      */
     addAtomFractional(element, fx, fy, fz) {
         if (!this.lattice) throw new Error('Crystal: lattice not set');
+        if (!isFinite(fx) || !isFinite(fy) || !isFinite(fz)) {
+            throw new Error(`Invalid fractional coordinates for ${element}: (${fx}, ${fy}, ${fz})`);
+        }
         const cart = this.lattice.fracToCart(fx, fy, fz);
         const atom = super.addAtom(element, cart);
         this.fracCoords.set(atom.id, { x: fx, y: fy, z: fz });
@@ -183,70 +194,32 @@ export class Crystal extends Molecule {
     }
 
     /**
+     * Return fractional coordinates for an atom, falling back to computing
+     * them from the stored Cartesian position if not cached.
+     * @param {object} atom
+     * @returns {{ x: number, y: number, z: number }}
+     */
+    getFracSafe(atom) {
+        const cached = this.getFrac(atom);
+        if (cached) return cached;
+        const f = this.lattice.cartToFrac(atom.position.x, atom.position.y, atom.position.z);
+        return { x: f.x, y: f.y, z: f.z };
+    }
+
+    /**
      * Wrap all atoms into the unit cell [0, 1).
      * Updates both fracCoords and Cartesian positions.
      */
     wrapAtoms() {
         if (!this.lattice) return;
         this.atoms.forEach(atom => {
-            let frac = this.getFrac(atom);
-            if (!frac) {
-                const f = this.lattice.cartToFrac(atom.position.x, atom.position.y, atom.position.z);
-                frac = { x: f.x, y: f.y, z: f.z };
-                this.fracCoords.set(atom.id, frac);
-            }
+            const frac = this.getFracSafe(atom);
             frac.x = ((frac.x % 1) + 1) % 1;
             frac.y = ((frac.y % 1) + 1) % 1;
             frac.z = ((frac.z % 1) + 1) % 1;
             const cart = this.lattice.fracToCart(frac.x, frac.y, frac.z);
             atom.position.copy(cart);
         });
-    }
-
-    /**
-     * Generate a supercell by repeating the unit cell na × nb × nc times.
-     * @param {number} na
-     * @param {number} nb
-     * @param {number} nc
-     * @returns {Crystal}
-     */
-    generateSupercell(na, nb, nc) {
-        if (!this.lattice) throw new Error('Crystal: lattice not set');
-        const sc = new Crystal(`${this.name} ${na}×${nb}×${nc}`);
-        sc.setLattice(new LatticeParams(
-            this.lattice.a * na,
-            this.lattice.b * nb,
-            this.lattice.c * nc,
-            this.lattice.alpha,
-            this.lattice.beta,
-            this.lattice.gamma
-        ));
-        sc.spaceGroup = this.spaceGroup;
-        sc.spaceGroupNumber = this.spaceGroupNumber;
-
-        for (let ia = 0; ia < na; ia++) {
-            for (let ib = 0; ib < nb; ib++) {
-                for (let ic = 0; ic < nc; ic++) {
-                    this.atoms.forEach(atom => {
-                        let frac = this.getFrac(atom);
-                        if (!frac) {
-                            const f = this.lattice.cartToFrac(
-                                atom.position.x, atom.position.y, atom.position.z
-                            );
-                            frac = { x: f.x, y: f.y, z: f.z };
-                        }
-                        sc.addAtomFractional(
-                            atom.element,
-                            (frac.x + ia) / na,
-                            (frac.y + ib) / nb,
-                            (frac.z + ic) / nc
-                        );
-                    });
-                }
-            }
-        }
-
-        return sc;
     }
 
     /**
@@ -317,11 +290,7 @@ export class Crystal extends Molecule {
         const EPS = 1e-6;
 
         this.atoms.forEach(atom => {
-            let frac = this.getFrac(atom);
-            if (!frac) {
-                const f = this.lattice.cartToFrac(atom.position.x, atom.position.y, atom.position.z);
-                frac = { x: f.x, y: f.y, z: f.z };
-            }
+            const frac = this.getFracSafe(atom);
 
             for (let n1 = -R; n1 <= R; n1++) {
                 for (let n2 = -R; n2 <= R; n2++) {
