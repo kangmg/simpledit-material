@@ -39,8 +39,12 @@ export class LatticeParams {
         const va = new THREE.Vector3(a, 0, 0);
         const vb = new THREE.Vector3(b * Math.cos(ga), b * Math.sin(ga), 0);
 
+        const sinGa = Math.sin(ga);
+        if (Math.abs(sinGa) < 1e-10) {
+            throw new Error(`Degenerate lattice: gamma = ${this.gamma}° (sin γ ≈ 0)`);
+        }
         const cx = c * Math.cos(be);
-        const cy = c * (Math.cos(al) - Math.cos(be) * Math.cos(ga)) / Math.sin(ga);
+        const cy = c * (Math.cos(al) - Math.cos(be) * Math.cos(ga)) / sinGa;
         const czSq = c * c - cx * cx - cy * cy;
         const cz = czSq > 1e-12 ? Math.sqrt(czSq) : 0;
         const vc = new THREE.Vector3(cx, cy, cz);
@@ -79,7 +83,11 @@ export class LatticeParams {
             a.y, b.y, c.y,
             a.z, b.z, c.z
         );
-        return new THREE.Vector3(x, y, z).applyMatrix3(M.clone().invert());
+        const Minv = M.clone();
+        if (Minv.determinant() === 0) {
+            throw new Error('Singular lattice matrix: cannot convert Cartesian to fractional');
+        }
+        return new THREE.Vector3(x, y, z).applyMatrix3(Minv.invert());
     }
 
     /** Unit cell volume in Å³ */
@@ -201,52 +209,6 @@ export class Crystal extends Molecule {
             const cart = this.lattice.fracToCart(frac.x, frac.y, frac.z);
             atom.position.copy(cart);
         });
-    }
-
-    /**
-     * Generate a supercell by repeating the unit cell na × nb × nc times.
-     * @param {number} na
-     * @param {number} nb
-     * @param {number} nc
-     * @returns {Crystal}
-     */
-    generateSupercell(na, nb, nc) {
-        if (!this.lattice) throw new Error('Crystal: lattice not set');
-        const sc = new Crystal(`${this.name} ${na}×${nb}×${nc}`);
-        sc.setLattice(new LatticeParams(
-            this.lattice.a * na,
-            this.lattice.b * nb,
-            this.lattice.c * nc,
-            this.lattice.alpha,
-            this.lattice.beta,
-            this.lattice.gamma
-        ));
-        sc.spaceGroup = this.spaceGroup;
-        sc.spaceGroupNumber = this.spaceGroupNumber;
-
-        for (let ia = 0; ia < na; ia++) {
-            for (let ib = 0; ib < nb; ib++) {
-                for (let ic = 0; ic < nc; ic++) {
-                    this.atoms.forEach(atom => {
-                        let frac = this.getFrac(atom);
-                        if (!frac) {
-                            const f = this.lattice.cartToFrac(
-                                atom.position.x, atom.position.y, atom.position.z
-                            );
-                            frac = { x: f.x, y: f.y, z: f.z };
-                        }
-                        sc.addAtomFractional(
-                            atom.element,
-                            (frac.x + ia) / na,
-                            (frac.y + ib) / nb,
-                            (frac.z + ic) / nc
-                        );
-                    });
-                }
-            }
-        }
-
-        return sc;
     }
 
     /**
