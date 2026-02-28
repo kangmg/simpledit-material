@@ -195,6 +195,86 @@
           <button id="btn-supercell" class="action-btn" style="margin-bottom: 5px;">Generate Supercell</button>
           <button id="btn-slab-generator" class="action-btn" style="margin-bottom: 10px;">Generate Slab</button>
 
+          <!-- Slab Generator panel -->
+          <div id="slab-controls" style="display: none; margin-bottom: 10px;">
+            <!-- What a slab is -->
+            <div style="background: #1e2a1e; border: 1px solid #3a5a3a; border-radius: 6px; padding: 8px 10px; margin-bottom: 10px; font-size: 11px; color: #8aba8a; line-height: 1.5;">
+              <strong style="color: #aad4aa;">Surface slab model</strong><br>
+              Cuts the bulk crystal along an (hkl) crystallographic plane,
+              keeps N atomic layers, and adds vacuum above them.
+              The result is a new periodic structure — the original bulk is
+              not modified.
+            </div>
+
+            <!-- Miller indices -->
+            <div style="margin-bottom: 8px;">
+              <div style="font-size: 11px; color: #888; margin-bottom: 4px;">
+                Miller indices (h k l) — cutting plane
+              </div>
+              <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px;">
+                <div style="text-align: center;">
+                  <div style="font-size: 10px; color: #666; margin-bottom: 2px;">h</div>
+                  <input type="number" id="slab-h" value="0" style="width: 100%; padding: 6px; background: #2d2d2e; border: 1px solid #444; border-radius: 4px; color: white; text-align: center;">
+                </div>
+                <div style="text-align: center;">
+                  <div style="font-size: 10px; color: #666; margin-bottom: 2px;">k</div>
+                  <input type="number" id="slab-k" value="0" style="width: 100%; padding: 6px; background: #2d2d2e; border: 1px solid #444; border-radius: 4px; color: white; text-align: center;">
+                </div>
+                <div style="text-align: center;">
+                  <div style="font-size: 10px; color: #666; margin-bottom: 2px;">l</div>
+                  <input type="number" id="slab-l" value="1" style="width: 100%; padding: 6px; background: #2d2d2e; border: 1px solid #444; border-radius: 4px; color: white; text-align: center;">
+                </div>
+              </div>
+              <div style="display: flex; gap: 5px; margin-top: 5px; flex-wrap: wrap;">
+                <button class="action-btn slab-preset" data-h="0" data-k="0" data-l="1" style="flex: 1; padding: 3px 0; font-size: 10px;">(001)</button>
+                <button class="action-btn slab-preset" data-h="1" data-k="1" data-l="0" style="flex: 1; padding: 3px 0; font-size: 10px;">(110)</button>
+                <button class="action-btn slab-preset" data-h="1" data-k="1" data-l="1" style="flex: 1; padding: 3px 0; font-size: 10px;">(111)</button>
+                <button class="action-btn slab-preset" data-h="1" data-k="0" data-l="0" style="flex: 1; padding: 3px 0; font-size: 10px;">(100)</button>
+              </div>
+            </div>
+
+            <!-- Layers -->
+            <div style="margin-bottom: 8px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <div>
+                  <span style="font-size: 11px; color: #888;">Atomic layers</span>
+                  <div style="font-size: 10px; color: #555;">How many planes to keep</div>
+                </div>
+                <input type="number" id="slab-layers" value="4" min="1" max="20"
+                  style="width: 52px; padding: 4px; background: #2d2d2e; border: 1px solid #444; border-radius: 4px; color: white; text-align: center;">
+              </div>
+            </div>
+
+            <!-- Vacuum -->
+            <div style="margin-bottom: 8px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <div>
+                  <span style="font-size: 11px; color: #888;">Vacuum (Å)</span>
+                  <div style="font-size: 10px; color: #555;">Empty space above the slab</div>
+                </div>
+                <input type="number" id="slab-vacuum" value="10" min="0" max="50" step="0.5"
+                  style="width: 52px; padding: 4px; background: #2d2d2e; border: 1px solid #444; border-radius: 4px; color: white; text-align: center;">
+              </div>
+            </div>
+
+            <!-- Center toggle -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+              <div>
+                <span style="font-size: 11px; color: #888;">Center in vacuum</span>
+                <div style="font-size: 10px; color: #555;">Place slab at mid-height of cell</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="slab-centered" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+
+            <div style="display: flex; gap: 5px;">
+              <button id="btn-slab-apply" class="action-btn" style="flex: 1;">Apply</button>
+              <button id="btn-slab-cancel" class="action-btn" style="flex: 1; background: #ff4444;">Cancel</button>
+            </div>
+          </div>
+
           <div style="margin-bottom: 10px; font-size: 12px; color: #888;">Visualization</div>
           <div class="control-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
             <span style="font-size: 12px; color: #ccc;">Unit Cell</span>

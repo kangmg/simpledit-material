@@ -485,6 +485,88 @@ export class UIManager {
     }
 
     /**
+     * Bind the Generate Surface Slab button and its inline control panel.
+     */
+    bindSlabGeneratorButton() {
+        const btnSlab   = document.getElementById('btn-slab-generator');
+        const controls  = document.getElementById('slab-controls');
+        const btnApply  = document.getElementById('btn-slab-apply');
+        const btnCancel = document.getElementById('btn-slab-cancel');
+
+        if (btnSlab) {
+            btnSlab.onclick = () => {
+                if (controls) {
+                    controls.style.display = controls.style.display === 'none' ? 'block' : 'none';
+                }
+            };
+        }
+
+        if (btnCancel) {
+            btnCancel.onclick = () => {
+                if (controls) controls.style.display = 'none';
+            };
+        }
+
+        // Quick-preset buttons: (001), (110), (111), (100)
+        document.querySelectorAll('.slab-preset').forEach(btn => {
+            btn.onclick = () => {
+                document.getElementById('slab-h').value = btn.dataset.h;
+                document.getElementById('slab-k').value = btn.dataset.k;
+                document.getElementById('slab-l').value = btn.dataset.l;
+            };
+        });
+
+        if (btnApply) {
+            btnApply.onclick = () => {
+                const mol = this.editor.molecule;
+                if (!mol || !mol.isCrystal) {
+                    this.showError('No crystal loaded. Import a CIF or POSCAR file first.');
+                    return;
+                }
+
+                const h       = parseInt(document.getElementById('slab-h').value)      || 0;
+                const k       = parseInt(document.getElementById('slab-k').value)      || 0;
+                const l       = parseInt(document.getElementById('slab-l').value)      || 0;
+                const layers  = parseInt(document.getElementById('slab-layers').value) || 4;
+                const vacuum  = parseFloat(document.getElementById('slab-vacuum').value);
+                const centered = document.getElementById('slab-centered').checked;
+
+                if (h === 0 && k === 0 && l === 0) {
+                    this.showError('Miller indices (h k l) cannot all be zero.');
+                    return;
+                }
+                if (layers < 1) {
+                    this.showError('Atomic layers must be at least 1.');
+                    return;
+                }
+                if (isNaN(vacuum) || vacuum < 0) {
+                    this.showError('Vacuum must be a non-negative number.');
+                    return;
+                }
+
+                try {
+                    const slab = SlabGenerator.generate(mol, h, k, l, layers, vacuum, centered);
+                    this.editor.moleculeManager.loadCrystal(slab);
+                    this.editor.moleculeManager.autoBondPBC();
+                    this.editor.rebuildScene();
+                    this.editor.saveState();
+
+                    const info = slab._slabInfo;
+                    this.showSuccess(
+                        `(${h}${k}${l}) slab: ${slab.atoms.length} atoms · ` +
+                        `d = ${info.dSpacing.toFixed(3)} Å · ` +
+                        `c = ${slab.lattice.c.toFixed(2)} Å`
+                    );
+
+                    if (controls) controls.style.display = 'none';
+                } catch (e) {
+                    this.showError('Slab generation failed: ' + e.message);
+                }
+            };
+        }
+    }
+
+    /**
      * Bind supercell button - now opens modal
      */
     bindSupercellButton() {
