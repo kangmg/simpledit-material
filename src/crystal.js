@@ -179,6 +179,9 @@ export class Crystal extends Molecule {
      */
     addAtomFractional(element, fx, fy, fz) {
         if (!this.lattice) throw new Error('Crystal: lattice not set');
+        if (!isFinite(fx) || !isFinite(fy) || !isFinite(fz)) {
+            throw new Error(`Invalid fractional coordinates for ${element}: (${fx}, ${fy}, ${fz})`);
+        }
         const cart = this.lattice.fracToCart(fx, fy, fz);
         const atom = super.addAtom(element, cart);
         this.fracCoords.set(atom.id, { x: fx, y: fy, z: fz });
@@ -191,18 +194,26 @@ export class Crystal extends Molecule {
     }
 
     /**
+     * Return fractional coordinates for an atom, falling back to computing
+     * them from the stored Cartesian position if not cached.
+     * @param {object} atom
+     * @returns {{ x: number, y: number, z: number }}
+     */
+    getFracSafe(atom) {
+        const cached = this.getFrac(atom);
+        if (cached) return cached;
+        const f = this.lattice.cartToFrac(atom.position.x, atom.position.y, atom.position.z);
+        return { x: f.x, y: f.y, z: f.z };
+    }
+
+    /**
      * Wrap all atoms into the unit cell [0, 1).
      * Updates both fracCoords and Cartesian positions.
      */
     wrapAtoms() {
         if (!this.lattice) return;
         this.atoms.forEach(atom => {
-            let frac = this.getFrac(atom);
-            if (!frac) {
-                const f = this.lattice.cartToFrac(atom.position.x, atom.position.y, atom.position.z);
-                frac = { x: f.x, y: f.y, z: f.z };
-                this.fracCoords.set(atom.id, frac);
-            }
+            const frac = this.getFracSafe(atom);
             frac.x = ((frac.x % 1) + 1) % 1;
             frac.y = ((frac.y % 1) + 1) % 1;
             frac.z = ((frac.z % 1) + 1) % 1;
@@ -279,11 +290,7 @@ export class Crystal extends Molecule {
         const EPS = 1e-6;
 
         this.atoms.forEach(atom => {
-            let frac = this.getFrac(atom);
-            if (!frac) {
-                const f = this.lattice.cartToFrac(atom.position.x, atom.position.y, atom.position.z);
-                frac = { x: f.x, y: f.y, z: f.z };
-            }
+            const frac = this.getFracSafe(atom);
 
             for (let n1 = -R; n1 <= R; n1++) {
                 for (let n2 = -R; n2 <= R; n2++) {
