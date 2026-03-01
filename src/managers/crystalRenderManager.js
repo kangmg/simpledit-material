@@ -32,6 +32,8 @@ export class CrystalRenderManager {
         this.showPolyhedra = false;
         /** Elements that are polyhedra centres (empty = all with CN ≥ 3) */
         this.polyhedralElements = [];
+        /** @type {{center:string, ligand:string}[]} Directional centre→ligand pairs */
+        this.polyhedralPairs = [];
 
         /** @type {THREE.Sprite[]} Miller index labels */
         this.millerLabels = [];
@@ -259,18 +261,37 @@ export class CrystalRenderManager {
         this.clearPolyhedra();
         if (!this.showPolyhedra || !mol) return;
 
-        const filterEls = this.polyhedralElements.length > 0
+        // Build pair lookup: center element → Set of allowed ligand elements
+        const pairMap = new Map();
+        if (this.polyhedralPairs.length > 0) {
+            for (const { center, ligand } of this.polyhedralPairs) {
+                if (!pairMap.has(center)) pairMap.set(center, new Set());
+                pairMap.get(center).add(ligand);
+            }
+        }
+
+        const usePairs = pairMap.size > 0;
+        const filterEls = !usePairs && this.polyhedralElements.length > 0
             ? new Set(this.polyhedralElements)
             : null;
 
         mol.atoms.forEach(atom => {
-            if (filterEls && !filterEls.has(atom.element)) return;
+            // Determine if this atom qualifies as a polyhedron centre
+            if (usePairs) {
+                if (!pairMap.has(atom.element)) return;
+            } else if (filterEls) {
+                if (!filterEls.has(atom.element)) return;
+            }
             if (atom.bonds.length < 3) return; // need at least 4 points for a solid
+
+            const allowedLigands = usePairs ? pairMap.get(atom.element) : null;
 
             // Collect neighbour positions (using minimum-image for PBC)
             const pts = [];
             atom.bonds.forEach(bond => {
                 const nb = bond.atom1 === atom ? bond.atom2 : bond.atom1;
+                // If using pairs, only include neighbours whose element is allowed
+                if (allowedLigands && !allowedLigands.has(nb.element)) return;
                 let pos = nb.position.clone();
                 if (mol.isCrystal && mol.lattice) {
                     const disp = pos.clone().sub(atom.position);
@@ -325,10 +346,12 @@ export class CrystalRenderManager {
      * Enable / disable polyhedral rendering.
      * @param {boolean} visible
      * @param {string[]} [elements] Optional element filter (e.g. ['Fe', 'Ti'])
+     * @param {{center:string,ligand:string}[]} [pairs] Optional directional pairs
      */
-    setPolyhedra(visible, elements) {
+    setPolyhedra(visible, elements, pairs) {
         this.showPolyhedra = visible;
         if (elements !== undefined) this.polyhedralElements = elements;
+        if (pairs !== undefined) this.polyhedralPairs = pairs;
         if (!visible) this.clearPolyhedra();
     }
 
