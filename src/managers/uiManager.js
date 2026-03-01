@@ -877,11 +877,47 @@ export class UIManager {
         return [...set].sort();
     }
 
-    /** Build an <option> list for the given elements */
-    _buildElementOptions(elements, selected) {
-        return elements.map(el =>
-            `<option value="${el}"${el === selected ? ' selected' : ''}>${el}</option>`
-        ).join('');
+    /** Get hex color string for an element (jmol scheme) */
+    _getElementHexColor(el) {
+        const data = ELEMENTS[el] || ELEMENTS['C'];
+        const hex = (data.jmol ?? data.cpk ?? 0x909090).toString(16).padStart(6, '0');
+        return '#' + hex;
+    }
+
+    /** Determine readable text color (black or white) for a given bg hex */
+    _textColorForBg(hexStr) {
+        const r = parseInt(hexStr.slice(1, 3), 16);
+        const g = parseInt(hexStr.slice(3, 5), 16);
+        const b = parseInt(hexStr.slice(5, 7), 16);
+        const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+        return lum > 140 ? '#111' : '#fff';
+    }
+
+    /** Create a clickable element badge that cycles through available elements */
+    _createElementBadge(elements, initial, onChange) {
+        const badge = document.createElement('span');
+        let idx = Math.max(0, elements.indexOf(initial));
+
+        const update = () => {
+            const el = elements[idx];
+            const bg = this._getElementHexColor(el);
+            badge.textContent = el;
+            badge.dataset.element = el;
+            badge.style.cssText =
+                `display:inline-block;min-width:32px;text-align:center;padding:2px 7px;` +
+                `border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;` +
+                `user-select:none;background:${bg};color:${this._textColorForBg(bg)};` +
+                `border:1px solid rgba(255,255,255,0.15);line-height:1.4;`;
+        };
+        update();
+
+        badge.onclick = () => {
+            idx = (idx + 1) % elements.length;
+            update();
+            if (onChange) onChange(elements[idx]);
+        };
+
+        return badge;
     }
 
     /** Add one pair row to the polyhedron pairs list */
@@ -893,25 +929,28 @@ export class UIManager {
         if (elements.length < 1) return;
 
         const row = document.createElement('div');
-        row.style.cssText = 'display:flex;align-items:center;gap:3px;margin-bottom:3px;';
-        row.innerHTML = `
-            <select class="poly-pair-center" style="flex:1;background:#222;color:#ccc;border:1px solid #444;border-radius:3px;padding:2px;font-size:11px;">
-                ${this._buildElementOptions(elements, center || elements[0])}
-            </select>
-            <span style="color:#666;font-size:11px;">→</span>
-            <select class="poly-pair-ligand" style="flex:1;background:#222;color:#ccc;border:1px solid #444;border-radius:3px;padding:2px;font-size:11px;">
-                ${this._buildElementOptions(elements, ligand || (elements[1] || elements[0]))}
-            </select>
-            <button class="poly-pair-remove" style="background:none;border:none;color:#888;cursor:pointer;font-size:13px;padding:0 3px;">×</button>
-        `;
+        row.style.cssText = 'display:flex;align-items:center;gap:5px;margin-bottom:4px;';
 
-        row.querySelector('.poly-pair-remove').onclick = () => {
-            row.remove();
-            this._syncPolyPairs();
-        };
-        row.querySelector('.poly-pair-center').onchange = () => this._syncPolyPairs();
-        row.querySelector('.poly-pair-ligand').onchange = () => this._syncPolyPairs();
+        const centerBadge = this._createElementBadge(
+            elements, center || elements[0], () => this._syncPolyPairs()
+        );
+        centerBadge.classList.add('poly-pair-center');
 
+        const arrow = document.createElement('span');
+        arrow.textContent = '→';
+        arrow.style.cssText = 'color:#666;font-size:12px;';
+
+        const ligandBadge = this._createElementBadge(
+            elements, ligand || (elements[1] || elements[0]), () => this._syncPolyPairs()
+        );
+        ligandBadge.classList.add('poly-pair-ligand');
+
+        const btnRemove = document.createElement('button');
+        btnRemove.textContent = '×';
+        btnRemove.style.cssText = 'background:none;border:none;color:#666;cursor:pointer;font-size:14px;padding:0 2px;margin-left:auto;';
+        btnRemove.onclick = () => { row.remove(); this._syncPolyPairs(); };
+
+        row.append(centerBadge, arrow, ligandBadge, btnRemove);
         list.appendChild(row);
         this._syncPolyPairs();
     }
@@ -924,8 +963,8 @@ export class UIManager {
         const rows = document.querySelectorAll('#poly-pairs-list > div');
         const pairs = [];
         rows.forEach(row => {
-            const center = row.querySelector('.poly-pair-center')?.value;
-            const ligand = row.querySelector('.poly-pair-ligand')?.value;
+            const center = row.querySelector('.poly-pair-center')?.dataset.element;
+            const ligand = row.querySelector('.poly-pair-ligand')?.dataset.element;
             if (center && ligand) pairs.push({ center, ligand });
         });
 
