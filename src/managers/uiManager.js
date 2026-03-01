@@ -757,7 +757,13 @@ export class UIManager {
 
         if (btnApply) {
             btnApply.onclick = async () => {
-                const mol = this.editor.molecule;
+                // Respect the "Fix Unit Cell" toggle: use the stored original
+                // unit cell when the toggle is ON (same as supercell command).
+                const chkFix = document.getElementById('chk-fix-unitcell');
+                const useBase = chkFix && chkFix.checked &&
+                                this.editor.unitCellBase &&
+                                this.editor.unitCellBase.isCrystal;
+                const mol = useBase ? this.editor.unitCellBase : this.editor.molecule;
                 if (!mol || !mol.isCrystal) return;
 
                 const h = parseInt(document.getElementById('slab-h').value);
@@ -832,8 +838,13 @@ export class UIManager {
                 if (chkPolyhedra.checked) {
                     crm.drawPolyhedra(this.editor.molecule, this.editor.renderManager);
                 }
+                // Show/hide the pairs panel
+                const pairsSection = document.getElementById('polyhedra-pairs-section');
+                if (pairsSection) pairsSection.style.display = chkPolyhedra.checked ? 'block' : 'none';
             };
         }
+
+        this._bindPolyhedraPairsUI();
 
         if (chkMiller) {
             chkMiller.onchange = () => {
@@ -844,6 +855,84 @@ export class UIManager {
                     crm.drawMillerIndices(this.editor.molecule);
                 }
             };
+        }
+    }
+
+    /** Bind the polyhedron pairs add/remove UI */
+    _bindPolyhedraPairsUI() {
+        const btnAdd = document.getElementById('btn-poly-add-pair');
+        if (!btnAdd) return;
+
+        btnAdd.onclick = () => {
+            this._addPolyPairRow();
+        };
+    }
+
+    /** Get unique element symbols from the current molecule */
+    _getMoleculeElements() {
+        const mol = this.editor.molecule;
+        if (!mol) return [];
+        const set = new Set();
+        mol.atoms.forEach(a => set.add(a.element));
+        return [...set].sort();
+    }
+
+    /** Build an <option> list for the given elements */
+    _buildElementOptions(elements, selected) {
+        return elements.map(el =>
+            `<option value="${el}"${el === selected ? ' selected' : ''}>${el}</option>`
+        ).join('');
+    }
+
+    /** Add one pair row to the polyhedron pairs list */
+    _addPolyPairRow(center, ligand) {
+        const list = document.getElementById('poly-pairs-list');
+        if (!list) return;
+
+        const elements = this._getMoleculeElements();
+        if (elements.length < 1) return;
+
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:center;gap:3px;margin-bottom:3px;';
+        row.innerHTML = `
+            <select class="poly-pair-center" style="flex:1;background:#222;color:#ccc;border:1px solid #444;border-radius:3px;padding:2px;font-size:11px;">
+                ${this._buildElementOptions(elements, center || elements[0])}
+            </select>
+            <span style="color:#666;font-size:11px;">→</span>
+            <select class="poly-pair-ligand" style="flex:1;background:#222;color:#ccc;border:1px solid #444;border-radius:3px;padding:2px;font-size:11px;">
+                ${this._buildElementOptions(elements, ligand || (elements[1] || elements[0]))}
+            </select>
+            <button class="poly-pair-remove" style="background:none;border:none;color:#888;cursor:pointer;font-size:13px;padding:0 3px;">×</button>
+        `;
+
+        row.querySelector('.poly-pair-remove').onclick = () => {
+            row.remove();
+            this._syncPolyPairs();
+        };
+        row.querySelector('.poly-pair-center').onchange = () => this._syncPolyPairs();
+        row.querySelector('.poly-pair-ligand').onchange = () => this._syncPolyPairs();
+
+        list.appendChild(row);
+        this._syncPolyPairs();
+    }
+
+    /** Read all pair rows and push into CrystalRenderManager, then redraw */
+    _syncPolyPairs() {
+        const crm = this.editor.crystalRenderManager;
+        if (!crm) return;
+
+        const rows = document.querySelectorAll('#poly-pairs-list > div');
+        const pairs = [];
+        rows.forEach(row => {
+            const center = row.querySelector('.poly-pair-center')?.value;
+            const ligand = row.querySelector('.poly-pair-ligand')?.value;
+            if (center && ligand) pairs.push({ center, ligand });
+        });
+
+        crm.polyhedralPairs = pairs;
+
+        if (crm.showPolyhedra) {
+            crm.drawPolyhedra(this.editor.molecule, this.editor.renderManager);
         }
     }
 

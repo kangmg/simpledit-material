@@ -1257,7 +1257,14 @@ export class CommandRegistry {
             if (args.length < 3) {
                 return { error: 'Usage: slab <h> <k> <l> [layers] [vacuum] [-no-center]\n  e.g.: slab 0 0 1 4 10' };
             }
-            const mol = this.editor.molecule;
+
+            // Respect the "Fix Unit Cell" toggle: use the stored original
+            // unit cell when the toggle is ON (same as supercell command).
+            const chkFix = document.getElementById('chk-fix-unitcell');
+            const useBase = chkFix && chkFix.checked &&
+                            this.editor.unitCellBase &&
+                            this.editor.unitCellBase.isCrystal;
+            const mol = useBase ? this.editor.unitCellBase : this.editor.molecule;
             if (!mol || !mol.isCrystal) return { error: 'No crystal loaded' };
 
             const h = parseInt(args[0]);
@@ -1295,32 +1302,50 @@ export class CommandRegistry {
 
         // poly: toggle coordination polyhedra rendering
         this.register('poly', ['polyhedra'],
-            'poly [on|off] [element...] - Toggle coordination polyhedra', (args) => {
+            'poly [on|off] [element...] [Center>Ligand ...] - Toggle coordination polyhedra', (args) => {
             const crm = this.editor.crystalRenderManager;
             if (!crm) return { error: 'Crystal render manager not available' };
 
             const mol = this.editor.molecule;
 
-            // Parse on/off toggle and optional element list
+            // Parse on/off toggle, element list, and directional pairs (e.g. Si>O)
             let visible = !crm.showPolyhedra;
             const elements = [];
+            const pairs = [];
             for (const arg of args) {
                 const a = arg.toLowerCase();
                 if (a === 'on'  || a === '1' || a === 'true')  { visible = true;  continue; }
                 if (a === 'off' || a === '0' || a === 'false') { visible = false; continue; }
+                // Check for pair syntax: Center>Ligand or Center->Ligand
+                const pairMatch = arg.match(/^([A-Z][a-z]*)(?:->|>)([A-Z][a-z]*)$/i);
+                if (pairMatch) {
+                    const c = pairMatch[1].charAt(0).toUpperCase() + pairMatch[1].slice(1).toLowerCase();
+                    const l = pairMatch[2].charAt(0).toUpperCase() + pairMatch[2].slice(1).toLowerCase();
+                    pairs.push({ center: c, ligand: l });
+                    continue;
+                }
                 // Assume it's an element symbol
                 elements.push(arg.charAt(0).toUpperCase() + arg.slice(1).toLowerCase());
             }
 
-            crm.setPolyhedra(visible, elements.length > 0 ? elements : undefined);
+            crm.setPolyhedra(
+                visible,
+                elements.length > 0 ? elements : undefined,
+                pairs.length > 0 ? pairs : undefined
+            );
             if (visible && mol) {
                 crm.drawPolyhedra(mol, this.editor.renderManager);
             }
 
-            const elStr = crm.polyhedralElements.length > 0
-                ? ` [${crm.polyhedralElements.join(', ')}]`
-                : ' (all with CN≥3)';
-            return { success: `Polyhedra ${visible ? 'on' : 'off'}${visible ? elStr : ''}` };
+            let desc;
+            if (crm.polyhedralPairs.length > 0) {
+                desc = ` [${crm.polyhedralPairs.map(p => p.center + '→' + p.ligand).join(', ')}]`;
+            } else if (crm.polyhedralElements.length > 0) {
+                desc = ` [${crm.polyhedralElements.join(', ')}]`;
+            } else {
+                desc = ' (all with CN≥3)';
+            }
+            return { success: `Polyhedra ${visible ? 'on' : 'off'}${visible ? desc : ''}` };
         });
 
         // bonds: toggle bond visibility
