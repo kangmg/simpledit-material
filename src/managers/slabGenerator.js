@@ -180,6 +180,10 @@ export class SlabGenerator {
 
         // ── Convert to fractional coords in slab cell; wrap & deduplicate ───
         const EPS_frac = 2e-4;
+        // Use layer-scale tolerance for z-boundary to avoid discarding atoms
+        // that were already correctly selected by the z_proj filter above
+        const EPS_z_frac = Math.max(EPS_frac, EPS_layer / total_c_len);
+        const maxSlabFracZ = slab_height / total_c_len;
         const candidates = [];
 
         for (const a of slabAtoms) {
@@ -189,9 +193,9 @@ export class SlabGenerator {
             frac.x = ((frac.x % 1) + 1) % 1;
             frac.y = ((frac.y % 1) + 1) % 1;
 
-            // Z must sit within the slab (before vacuum offset)
-            if (frac.z < -EPS_frac || frac.z >= 1.0 - EPS_frac) continue;
-            frac.z = Math.max(0, frac.z);
+            // Z must sit within the slab depth range; clamp near-boundary atoms
+            if (frac.z < -EPS_z_frac || frac.z > maxSlabFracZ + EPS_z_frac) continue;
+            frac.z = Math.max(0, Math.min(frac.z, maxSlabFracZ));
 
             candidates.push({ element: a.element, fx: frac.x, fy: frac.y, fz: frac.z });
         }
